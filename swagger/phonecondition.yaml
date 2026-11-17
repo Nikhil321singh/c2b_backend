@@ -1,0 +1,147 @@
+paths:
+  /api/conditions/add-many:
+    post:
+      tags:
+        - Phone Conditions
+      summary: Bulk add phone conditions
+      description: Upload a CSV/Excel file to add multiple phone condition records
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              required:
+                - file
+              properties:
+                file:
+                  type: string
+                  format: binary
+                  description: CSV or Excel file containing phone condition data with columns for warranty, core, display, functional major/minor, cosmetics, accessories, and grade
+      responses:
+        '200':
+          description: Phone conditions created successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        warrentyCode:
+                          type: string
+                          example: WARRANTY1
+                        coreCode:
+                          type: string
+                          example: CORE1
+                        displayCode:
+                          type: string
+                          example: DISPLAY3
+                        functionalMajorCode:
+                          type: string
+                          example: FUNCTIONAL_MAJOR3
+                        functionalMinorCode:
+                          type: string
+                          example: FUNCTIONAL_MINOR3
+                        cosmeticsCode:
+                          type: string
+                          example: COSMETICS4
+                        accessoriesCode:
+                          type: string
+                          example: ACCESSORIES1
+                        grade:
+                          type: string
+                          example: A+
+                  message:
+                    type: string
+                    example: questionnaires created successfully.
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  /api/conditions/update-grades:
+    put:
+      tags:
+        - Phone Conditions
+      summary: Update phone condition grades
+      description: Upload a CSV/Excel file to update grades for existing phone conditions or insert new ones
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              required:
+                - file
+              properties:
+                file:
+                  type: string
+                  format: binary
+                  description: CSV or Excel file with columns - Warranty, Core, Display, FUNCTIONAL major, FUNCTIONAL Minor, COSMETICS, Accessory, New grades. Will update existing records or insert new ones if not found.
+      responses:
+        '200':
+          description: Grade update process completed
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: Grade update process completed.
+                  updatedCount:
+                    type: number
+                    example: 15
+                    description: Number of records updated
+                  insertedCount:
+                    type: number
+                    example: 5
+                    description: Number of new records inserted
+                  errorCount:
+                    type: number
+                    example: 0
+                    description: Number of records with errors
+                  totalProcessed:
+                    type: number
+                    example: 20
+                    description: Total records processed
+                  success:
+                    type: boolean
+                    example: true
+                    description: True if no errors occurred
+                  errors:
+                    type: array
+                    items:
+                      type: string
+                    description: Array of error messages (first 10 errors shown)
+                    example: ["Row 2: Missing required fields: grade"]
+                  additionalErrorsCount:
+                    type: number
+                    description: Number of additional errors not shown (if more than 10 errors)
+                    example: 5
+        '400':
+          description: Bad request - No file uploaded or invalid CSV
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: No file uploaded
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'

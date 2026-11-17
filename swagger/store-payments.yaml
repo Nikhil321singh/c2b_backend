@@ -1,0 +1,106 @@
+paths:
+  /api/store-payments/requests:
+    post:
+      tags: [Store Payments]
+      summary: Raise a payment request for selected leads
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [leadIds]
+              properties:
+                leadIds:
+                  type: array
+                  items: { type: string }
+      responses:
+        '201': { description: Payment request created }
+        '403': { description: Role or store/company scope denied }
+        '409': { description: Lead already requested or changed }
+  /api/store-payments:
+    get:
+      tags: [Store Payments]
+      summary: List scoped store payment requests
+      parameters:
+        - in: query
+          name: status
+          schema:
+            type: string
+            enum: [PAYMENT_REQUESTED, FLAGGED, PAYMENT_DONE]
+        - in: query
+          name: storeId
+          schema: { type: string }
+      responses:
+        '200': { description: Store payment queue }
+  /api/store-payments/{id}:
+    get:
+      tags: [Store Payments]
+      summary: Open a read-only payment detail and record the view audit
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema: { type: string }
+      responses:
+        '200': { description: Payment request detail }
+  /api/store-payments/{id}/flag:
+    post:
+      tags: [Store Payments]
+      summary: Flag a requested payment for clarification
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema: { type: string }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [reason]
+              properties:
+                reason: { type: string }
+      responses:
+        '200': { description: Payment flagged }
+  /api/store-payments/{id}/unflag:
+    post:
+      tags: [Store Payments]
+      summary: Resume a flagged payment
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema: { type: string }
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                resolution: { type: string }
+      responses:
+        '200': { description: Payment returned to requested state }
+  /api/store-payments/{id}/mark-paid:
+    post:
+      tags: [Store Payments]
+      summary: Mark the store payment paid and hand devices to Warehouse
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema: { type: string }
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                paymentReference: { type: string }
+                paymentReceipt: { type: string, description: Receipt URL }
+                remarks: { type: string }
+      responses:
+        '200': { description: Payment done and Warehouse handoff completed }
+        '409': { description: Already paid or currently flagged }
+

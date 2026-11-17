@@ -1,0 +1,402 @@
+paths:
+  /api/store/create:
+    post:
+      tags:
+        - Store
+      summary: Create new store
+      description: Create a new store with auto-generated unique ID
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - storeName
+                - region
+                - email
+                - contactNumber
+                - address
+              properties:
+                storeName:
+                  type: string
+                  example: Grest Store Mumbai
+                region:
+                  type: string
+                  example: West
+                email:
+                  type: string
+                  format: email
+                  example: store.mumbai@grest.in
+                contactNumber:
+                  type: string
+                  example: '9876543210'
+                address:
+                  type: string
+                  example: 123 Main Street, Mumbai, Maharashtra 400001
+      responses:
+        '200':
+          description: Store created successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  result:
+                    type: object
+        '400':
+          description: Validation error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  /api/store/edit:
+    put:
+      tags:
+        - Store
+      summary: Update store
+      description: Update existing store information
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - _id
+              properties:
+                _id:
+                  type: string
+                  example: 60d5ec49f1b2c72b8c8e4f1a
+                  description: Store ID to update
+                id:
+                  type: string
+                  example: 60d5ec49f1b2c72b8c8e4f1a
+                  description: Alternative field for Store ID
+                storeName:
+                  type: string
+                  example: Grest Store Mumbai
+                region:
+                  type: string
+                  example: West
+                email:
+                  type: string
+                  format: email
+                  example: store.mumbai@grest.in
+                contactNumber:
+                  type: string
+                  example: '9876543210'
+                address:
+                  type: string
+                  example: 123 Main Street, Mumbai, Maharashtra 400001
+      responses:
+        '200':
+          description: Store updated successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  result:
+                    type: object
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '500':
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  /api/store/deleteById:
+    delete:
+      tags:
+        - Store
+      summary: Delete store
+      description: Delete a store by ID
+      security:
+        - bearerAuth: []
+      parameters:
+        - in: query
+          name: _id
+          schema:
+            type: string
+            example: 60d5ec49f1b2c72b8c8e4f1a
+          description: Store ID to delete
+        - in: query
+          name: id
+          schema:
+            type: string
+            example: 60d5ec49f1b2c72b8c8e4f1a
+          description: Alternative field for Store ID
+      responses:
+        '200':
+          description: Store deleted successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  result:
+                    type: object
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '500':
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  /api/store/findById:
+    get:
+      tags:
+        - Store
+      summary: Get store by ID
+      description: Retrieve a specific store by ID
+      security:
+        - bearerAuth: []
+      parameters:
+        - in: query
+          name: _id
+          schema:
+            type: string
+            example: 60d5ec49f1b2c72b8c8e4f1a
+          description: Store ID
+        - in: query
+          name: id
+          schema:
+            type: string
+            example: 60d5ec49f1b2c72b8c8e4f1a
+          description: Alternative field for Store ID
+      responses:
+        '200':
+          description: Store retrieved successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  result:
+                    type: object
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '500':
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  /api/store/findAll:
+    get:
+      tags:
+        - Store
+      summary: Get all stores
+      description: Retrieve list of all stores with pagination and search
+      security:
+        - bearerAuth: []
+      parameters:
+        - in: query
+          name: search
+          schema:
+            type: string
+            example: Mumbai
+          description: Search by store name
+        - in: query
+          name: limit
+          schema:
+            type: number
+            default: 9999
+            example: 50
+          description: Number of records per page
+        - in: query
+          name: page
+          schema:
+            type: number
+            default: 1
+            example: 1
+          description: Page number
+      responses:
+        '200':
+          description: Stores retrieved successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  result:
+                    type: array
+                    items:
+                      type: object
+                  totalRecords:
+                    type: number
+                    example: 100
+                  currentPage:
+                    type: number
+                    example: 1
+                  totalPages:
+                    type: number
+                    example: 2
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '403':
+          description: Forbidden
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  /api/store/uploadStores:
+    post:
+      tags:
+        - Store
+      summary: Bulk upload stores
+      description: Upload stores from Excel/CSV file via S3 URL
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - fileUrl
+              properties:
+                fileUrl:
+                  type: string
+                  example: https://bucket.s3.region.amazonaws.com/stores.xlsx
+                  description: S3 URL of the Excel/CSV file containing store data
+      responses:
+        '200':
+          description: Stores uploaded successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  updated:
+                    type: array
+                    items:
+                      type: object
+                    description: List of updated stores
+                  inserted:
+                    type: array
+                    items:
+                      type: object
+                    description: List of newly inserted stores
+        '400':
+          description: Invalid request or file
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  /api/store/adminReport:
+    get:
+      tags:
+        - Store
+      summary: Get admin report
+      description: Retrieve store-wise sales and pickup report with date range filter
+      security:
+        - bearerAuth: []
+      parameters:
+        - in: query
+          name: search
+          schema:
+            type: string
+            example: Mumbai Store
+          description: Search by store name
+        - in: query
+          name: fromDate
+          schema:
+            type: string
+            format: date
+            example: 2024-01-01
+          description: Start date for report
+        - in: query
+          name: toDate
+          schema:
+            type: string
+            format: date
+            example: 2024-01-31
+          description: End date for report
+      responses:
+        '200':
+          description: Admin report retrieved successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  total:
+                    type: object
+                    properties:
+                      totalAvailableForPickup:
+                        type: number
+                        example: 150
+                      totalPriceOfferToCustomer:
+                        type: number
+                        example: 500000
+                      totalPicked:
+                        type: number
+                        example: 120
+                      totalPickedPrice:
+                        type: number
+                        example: 400000
+                      totalPendingForPickup:
+                        type: number
+                        example: 30
+                      totalPendingForPickupPrice:
+                        type: number
+                        example: 100000
+                  result:
+                    type: array
+                    items:
+                      type: object
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '403':
+          description: Forbidden
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'

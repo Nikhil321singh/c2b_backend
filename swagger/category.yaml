@@ -1,0 +1,36 @@
+paths:
+  /api/category/getAll:
+    get:
+      tags:
+        - Category
+      summary: Get all categories
+      description: Retrieve list of all categories
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: List of categories retrieved successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  data:
+                    type: array
+                    items:
+                      type: object
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '500':
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'

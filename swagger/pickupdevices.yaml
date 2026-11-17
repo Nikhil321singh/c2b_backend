@@ -1,0 +1,426 @@
+paths:
+  /api/pickupDevices/all:
+    get:
+      tags:
+        - Pickup Devices
+      summary: Get all lots
+      description: Retrieve all device lots except those with status "Pickup Confirmed"
+      security:
+        - bearerAuth: []
+      parameters:
+        - in: query
+          name: userRole
+          schema:
+            type: string
+            default: Admin
+            example: Admin
+          description: User role filter
+        - in: query
+          name: region
+          schema:
+            type: string
+            example: North
+          description: Filter by store region (Super Admin only)
+        - in: query
+          name: storeName
+          schema:
+            type: string
+            example: Store ABC
+          description: Filter by store name (Super Admin only)
+      responses:
+        '200':
+          description: List of lots retrieved successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    type: array
+                    items:
+                      type: object
+                  message:
+                    type: string
+                    example: Successfully sent Lots
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '403':
+          description: Forbidden
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  /api/pickupDevices/search:
+    get:
+      tags:
+        - Pickup Devices
+      summary: Search lots
+      description: Search device lots by RID and/or date
+      security:
+        - bearerAuth: []
+      parameters:
+        - in: query
+          name: rid
+          schema:
+            type: string
+            example: GREST123
+          description: Search by unique code
+        - in: query
+          name: date
+          schema:
+            type: string
+            example: 01/01/2024
+          description: Search by date (DD/MM/YYYY format)
+        - in: query
+          name: userRole
+          schema:
+            type: string
+            default: Admin
+            example: Admin
+          description: User role filter
+        - in: query
+          name: region
+          schema:
+            type: string
+            example: North
+          description: Filter by store region (Super Admin only)
+        - in: query
+          name: storeName
+          schema:
+            type: string
+            example: Store ABC
+          description: Filter by store name (Super Admin only)
+      responses:
+        '200':
+          description: Search results retrieved successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    type: array
+                    items:
+                      type: object
+                  msg:
+                    type: string
+                    example: Successfully searched data
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '403':
+          description: Forbidden
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  /api/pickupDevices/history:
+    get:
+      tags:
+        - Pickup Devices
+      summary: Get lots history
+      description: Retrieve all lots with status "Pickup Confirmed"
+      security:
+        - bearerAuth: []
+      parameters:
+        - in: query
+          name: userRole
+          schema:
+            type: string
+            default: Admin
+            example: Admin
+          description: User role filter
+        - in: query
+          name: region
+          schema:
+            type: string
+            example: North
+          description: Filter by store region (Super Admin only)
+        - in: query
+          name: storeName
+          schema:
+            type: string
+            example: Store ABC
+          description: Filter by store name (Super Admin only)
+      responses:
+        '200':
+          description: Lots history retrieved successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    type: array
+                    items:
+                      type: object
+                  message:
+                    type: string
+                    example: Successfully sent Lots History
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '403':
+          description: Forbidden
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  /api/pickupDevices/update:
+    post:
+      tags:
+        - Pickup Devices
+      summary: Update lot status
+      description: Update status of multiple lots
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - refIDs
+                - newStatus
+              properties:
+                refIDs:
+                  type: array
+                  items:
+                    type: string
+                  example: ["60d5ec49f1b2c72b8c8e4f1a", "60d5ec49f1b2c72b8c8e4f1b"]
+                  description: Array of lot IDs to update
+                newStatus:
+                  type: string
+                  example: Pickup Confirmed
+                  description: New status for the lots
+                reason:
+                  type: string
+                  example: Picked up by technician
+                  description: Reason or remarks for status update
+      responses:
+        '200':
+          description: Lot status updated successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    type: object
+                  message:
+                    type: string
+                    example: Successfully updated lots status
+        '400':
+          description: Invalid request
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  /api/pickupDevices/devices/{rid}:
+    get:
+      tags:
+        - Pickup Devices
+      summary: Get devices list by lot ID
+      description: Retrieve all devices in a specific lot
+      security:
+        - bearerAuth: []
+      parameters:
+        - in: path
+          name: rid
+          required: true
+          schema:
+            type: string
+            example: 60d5ec49f1b2c72b8c8e4f1a
+          description: Lot ID
+      responses:
+        '200':
+          description: Devices list retrieved successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    type: array
+                    items:
+                      type: object
+                  message:
+                    type: string
+                    example: Successfully sended devicesList
+        '400':
+          description: Invalid lot ID
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  /api/pickupDevices/technicianReport:
+    get:
+      tags:
+        - Pickup Devices
+      summary: Get technician report
+      description: Retrieve technician pickup report with date range and search filters
+      security:
+        - bearerAuth: []
+      parameters:
+        - in: query
+          name: search
+          schema:
+            type: string
+            example: John Doe
+          description: Search by technician name or store name
+        - in: query
+          name: fromdate
+          schema:
+            type: string
+            format: date
+            example: 2024-01-01
+          description: Start date for report
+        - in: query
+          name: todate
+          schema:
+            type: string
+            format: date
+            example: 2024-01-31
+          description: End date for report
+      responses:
+        '200':
+          description: Technician report retrieved successfully
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  type: object
+                  properties:
+                    date:
+                      type: string
+                      example: 2024-01-15
+                    userId:
+                      type: string
+                    storeId:
+                      type: string
+                    totalDevice:
+                      type: number
+                      example: 25
+                    user:
+                      type: object
+                      properties:
+                        _id:
+                          type: string
+                        firstName:
+                          type: string
+                        lastName:
+                          type: string
+                        name:
+                          type: string
+                    store:
+                      type: object
+                      properties:
+                        storeName:
+                          type: string
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '403':
+          description: Forbidden
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  /api/pickupDevices/updatePaymentReceipt/{id}:
+    put:
+      tags:
+        - Pickup Devices
+      summary: Update payment receipt and remarks
+      description: Upload payment receipt PDF and update remarks for a lot
+      security:
+        - bearerAuth: []
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: string
+            example: 60d5ec49f1b2c72b8c8e4f1a
+          description: Lot ID
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              properties:
+                paymentReceipt:
+                  type: string
+                  format: binary
+                  description: Payment receipt PDF file
+                remarks:
+                  type: string
+                  example: UTR123456789
+                  description: UTR number or other remarks
+      responses:
+        '200':
+          description: Payment receipt uploaded successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  message:
+                    type: string
+                    example: Payment receipt uploaded and email sent successfully
+                  data:
+                    type: object
+        '400':
+          description: Invalid request
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '404':
+          description: DevicesLot not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'

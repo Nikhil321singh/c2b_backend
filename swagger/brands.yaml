@@ -1,0 +1,251 @@
+paths:
+  /api/brands/add-brand:
+    post:
+      tags:
+        - Brands
+      summary: Add new brand
+      description: Create a new brand with optional brand image
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              required:
+                - brandName
+              properties:
+                brandName:
+                  type: string
+                  example: Apple
+                brandImage:
+                  type: string
+                  format: binary
+                  description: Brand logo image file
+      responses:
+        '201':
+          description: Brand created successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Success'
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  /api/brands/update:
+    post:
+      tags:
+        - Brands
+      summary: Update brand
+      description: Update existing brand information
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              required:
+                - brandName
+                - brandUpd
+              properties:
+                brandName:
+                  type: string
+                  example: Apple
+                brandUpd:
+                  type: string
+                  description: JSON stringified object with update data
+                  example: '{"_id":"60d5ec49f1b2c72b8c8e4f1a"}'
+                brandImage:
+                  type: string
+                  format: binary
+                  description: Updated brand logo image file
+      responses:
+        '200':
+          description: Brand updated successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Success'
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  /api/brands/add-model:
+    post:
+      tags:
+        - Brands
+      summary: Add model to brand
+      description: Create a new device model for a brand
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                name:
+                  type: string
+                  example: iPhone 15 Pro
+                brandId:
+                  type: string
+                  example: 60d5ec49f1b2c72b8c8e4f1a
+                type:
+                  type: string
+                  example: CTG1
+                series:
+                  type: string
+                  example: iPhone 15 Series
+      responses:
+        '201':
+          description: Model created successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Success'
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  /api/brands/getBrands:
+    get:
+      tags:
+        - Brands
+      summary: Get all brands
+      description: Retrieve list of all brands with optional device type filter
+      security:
+        - bearerAuth: []
+      parameters:
+        - in: query
+          name: deviceType
+          schema:
+            type: string
+            example: CTG1
+          description: Filter brands by device type
+      responses:
+        '200':
+          description: List of brands
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  data:
+                    type: array
+                    items:
+                      type: object
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  /api/brands/getAllBrandsModels:
+    get:
+      tags:
+        - Brands
+      summary: Get all brands with models
+      description: Retrieve all brands with their associated models
+      security:
+        - bearerAuth: []
+      parameters:
+        - in: query
+          name: type
+          schema:
+            type: string
+            default: CTG1
+            example: CTG1
+          description: Device type filter
+      responses:
+        '200':
+          description: List of brands with models
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  data:
+                    type: array
+                    items:
+                      type: object
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  /api/brands/getSelectedBrandModels:
+    post:
+      tags:
+        - Brands
+      summary: Get models for selected brand
+      description: Retrieve models for a specific brand with optional filters
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - brandId
+              properties:
+                brandId:
+                  type: string
+                  example: 60d5ec49f1b2c72b8c8e4f1a
+                deviceType:
+                  type: string
+                  default: CTG1
+                  example: CTG1
+                search:
+                  type: string
+                  default: ''
+                  example: iPhone
+                series:
+                  type: string
+                  default: ''
+                  example: iPhone 15 Series
+      responses:
+        '200':
+          description: List of models for the brand
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  data:
+                    type: array
+                    items:
+                      type: object
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'

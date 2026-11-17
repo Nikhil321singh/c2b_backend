@@ -1,0 +1,501 @@
+paths:
+  /api/coupons/create:
+    post:
+      tags:
+        - Coupons
+      summary: Create new coupon
+      description: Create a new coupon (Super Admin only)
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - couponCode
+                - storeId
+                - devicePriceRange
+                - discountType
+                - discountValue
+                - validFrom
+                - validTo
+              properties:
+                couponCode:
+                  type: string
+                  example: SAVE100
+                  description: Unique coupon code (will be converted to uppercase)
+                storeId:
+                  type: string
+                  example: 60d5ec49f1b2c72b8c8e4f1a
+                  description: Store ID where coupon is applicable
+                devicePriceRange:
+                  type: object
+                  required:
+                    - min
+                    - max
+                  properties:
+                    min:
+                      type: number
+                      example: 5000
+                      description: Minimum device price
+                    max:
+                      type: number
+                      example: 10000
+                      description: Maximum device price
+                discountType:
+                  type: string
+                  enum: [Fixed, Percentage]
+                  example: Fixed
+                  description: Type of discount
+                discountValue:
+                  type: number
+                  example: 100
+                  description: Discount value (amount for Fixed, percentage for Percentage)
+                validFrom:
+                  type: string
+                  format: date-time
+                  example: 2024-01-01T00:00:00.000Z
+                  description: Coupon validity start date
+                validTo:
+                  type: string
+                  format: date-time
+                  example: 2024-12-31T23:59:59.999Z
+                  description: Coupon validity end date
+                status:
+                  type: string
+                  enum: [Active, Inactive]
+                  default: Active
+                  example: Active
+                  description: Coupon status
+      responses:
+        '201':
+          description: Coupon created successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: Coupon created successfully.
+                  data:
+                    type: object
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '403':
+          description: Access denied - Super Admin only
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '409':
+          description: Coupon code already exists or overlapping price range
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  /api/coupons/update/{id}:
+    put:
+      tags:
+        - Coupons
+      summary: Update coupon
+      description: Update existing coupon (Super Admin only)
+      security:
+        - bearerAuth: []
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: string
+            example: 60d5ec49f1b2c72b8c8e4f1a
+          description: Coupon ID
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                devicePriceRange:
+                  type: object
+                  properties:
+                    min:
+                      type: number
+                      example: 5000
+                    max:
+                      type: number
+                      example: 10000
+                discountType:
+                  type: string
+                  enum: [Fixed, Percentage]
+                  example: Fixed
+                discountValue:
+                  type: number
+                  example: 150
+                validFrom:
+                  type: string
+                  format: date-time
+                  example: 2024-01-01T00:00:00.000Z
+                validTo:
+                  type: string
+                  format: date-time
+                  example: 2024-12-31T23:59:59.999Z
+                status:
+                  type: string
+                  enum: [Active, Inactive]
+                  example: Active
+      responses:
+        '200':
+          description: Coupon updated successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: Coupon updated successfully.
+                  data:
+                    type: object
+        '400':
+          description: Cannot activate expired coupon
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '403':
+          description: Access denied - Super Admin only
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '404':
+          description: Coupon not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  /api/coupons/delete/{id}:
+    delete:
+      tags:
+        - Coupons
+      summary: Delete coupon
+      description: Delete a coupon (Super Admin only)
+      security:
+        - bearerAuth: []
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: string
+            example: 60d5ec49f1b2c72b8c8e4f1a
+          description: Coupon ID
+      responses:
+        '200':
+          description: Coupon deleted successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: Coupon was unused and has been deleted successfully.
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '403':
+          description: Access denied - Super Admin only
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '404':
+          description: Coupon not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  /api/coupons/list:
+    get:
+      tags:
+        - Coupons
+      summary: List all coupons
+      description: Retrieve list of all coupons with pagination and filters (Super Admin only)
+      security:
+        - bearerAuth: []
+      parameters:
+        - in: query
+          name: page
+          schema:
+            type: number
+            default: 1
+            example: 1
+          description: Page number
+        - in: query
+          name: limit
+          schema:
+            type: number
+            default: 10
+            example: 20
+          description: Number of records per page
+        - in: query
+          name: storeName
+          schema:
+            type: string
+            example: Mumbai Store
+          description: Filter by store name
+        - in: query
+          name: couponCode
+          schema:
+            type: string
+            example: SAVE100
+          description: Filter by coupon code
+        - in: query
+          name: imei
+          schema:
+            type: string
+            example: 123456789012345
+          description: Filter by IMEI (shows coupons used by this device)
+        - in: query
+          name: id
+          schema:
+            type: string
+            example: 60d5ec49f1b2c72b8c8e4f1a
+          description: Filter by coupon ID
+      responses:
+        '200':
+          description: Coupons retrieved successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    type: array
+                    items:
+                      type: object
+                  pagination:
+                    type: object
+                    properties:
+                      currentPage:
+                        type: number
+                        example: 1
+                      totalPages:
+                        type: number
+                        example: 5
+                      totalRecords:
+                        type: number
+                        example: 50
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '403':
+          description: Access denied - Super Admin only
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  /api/coupons/find-eligible/{leadId}:
+    get:
+      tags:
+        - Coupons
+      summary: Find eligible coupon for lead
+      description: Find an active coupon eligible for a specific lead based on price range and store
+      security:
+        - bearerAuth: []
+      parameters:
+        - in: path
+          name: leadId
+          required: true
+          schema:
+            type: string
+            example: 60d5ec49f1b2c72b8c8e4f1a
+          description: Lead ID
+      responses:
+        '200':
+          description: Eligible coupon found
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    type: object
+        '400':
+          description: Invalid Lead ID
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '404':
+          description: Lead not found or no eligible coupon
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  /api/coupons/apply:
+    post:
+      tags:
+        - Coupons
+      summary: Apply coupon to lead
+      description: Apply a coupon to a lead and update bonus price
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - couponCode
+                - leadId
+                - imei
+              properties:
+                couponCode:
+                  type: string
+                  example: SAVE100
+                  description: Coupon code to apply
+                leadId:
+                  type: string
+                  example: 60d5ec49f1b2c72b8c8e4f1a
+                  description: Lead ID
+                imei:
+                  type: string
+                  example: 123456789012345
+                  description: Device IMEI number
+      responses:
+        '200':
+          description: Coupon applied successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: Coupon applied successfully.
+                  data:
+                    type: object
+                    properties:
+                      leadId:
+                        type: string
+                      bonusPrice:
+                        type: number
+                        example: 100
+                      couponCode:
+                        type: string
+                      discountType:
+                        type: string
+                      discountValue:
+                        type: number
+        '400':
+          description: Invalid request or coupon not eligible
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '404':
+          description: Lead or coupon not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '409':
+          description: Coupon already applied or IMEI already used
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  /api/coupons/remove/{leadId}:
+    delete:
+      tags:
+        - Coupons
+      summary: Remove coupon from lead
+      description: Remove applied coupon from a lead and reset bonus price to 0
+      security:
+        - bearerAuth: []
+      parameters:
+        - in: path
+          name: leadId
+          required: true
+          schema:
+            type: string
+            example: 60d5ec49f1b2c72b8c8e4f1a
+          description: Lead ID
+      responses:
+        '200':
+          description: Coupon removed successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: Coupon removed successfully.
+                  data:
+                    type: object
+                    properties:
+                      leadId:
+                        type: string
+                      bonusPrice:
+                        type: number
+                        example: 0
+        '400':
+          description: Invalid request
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '404':
+          description: Lead not found or no coupon applied
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'

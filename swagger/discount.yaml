@@ -1,0 +1,278 @@
+paths:
+  /api/discounts/add:
+    post:
+      tags:
+        - Discounts
+      summary: Create new discount
+      description: Create a new discount entry for a lead
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - leadId
+                - discription
+              properties:
+                leadId:
+                  type: string
+                  example: 60d5ec49f1b2c72b8c8e4f1a
+                  description: ID of the lead to apply discount to
+                discription:
+                  type: string
+                  example: Special discount for repeat customer
+                  description: Description of the discount reason
+                discount:
+                  type: number
+                  example: 500
+                  default: 0
+                  description: Discount amount
+      responses:
+        '200':
+          description: Discount created successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    type: object
+                  message:
+                    type: string
+                    example: Discount created successfully.
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '500':
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  /api/discounts/update:
+    put:
+      tags:
+        - Discounts
+      summary: Update discount
+      description: Update an existing discount entry
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - id
+              properties:
+                id:
+                  type: string
+                  example: 60d5ec49f1b2c72b8c8e4f1a
+                  description: ID of the discount to update
+                leadId:
+                  type: string
+                  example: 60d5ec49f1b2c72b8c8e4f1a
+                  description: ID of the lead
+                discription:
+                  type: string
+                  example: Updated discount description
+                  description: Updated description
+                discount:
+                  type: number
+                  example: 750
+                  description: Updated discount amount
+      responses:
+        '200':
+          description: Discount updated successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: Discount updated successfully.
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '403':
+          description: Bad request - id is required
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: id is required
+                  status:
+                    type: integer
+                    example: 403
+        '500':
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  /api/discounts/findByLeadId:
+    get:
+      tags:
+        - Discounts
+      summary: Find discount by lead ID
+      description: Retrieve discount information for a specific lead
+      security:
+        - bearerAuth: []
+      parameters:
+        - in: query
+          name: leadId
+          required: true
+          schema:
+            type: string
+            example: 60d5ec49f1b2c72b8c8e4f1a
+          description: ID of the lead to fetch discount for
+      responses:
+        '200':
+          description: Discount fetched successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    type: array
+                    items:
+                      type: object
+                  message:
+                    type: string
+                    example: Discount fetched successfully.
+        '400':
+          description: Discount does not exist for selected lead
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: Discount does not exist for selected lead
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '403':
+          description: Bad request - leadId is required
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: leadId is required
+                  status:
+                    type: integer
+                    example: 403
+        '500':
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  /api/discounts/applyDiscount:
+    post:
+      tags:
+        - Discounts
+      summary: Apply discount to lead
+      description: Apply discount amount to lead's price
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - leadId
+                - discount
+              properties:
+                leadId:
+                  type: string
+                  example: 60d5ec49f1b2c72b8c8e4f1a
+                  description: ID of the lead to apply discount to
+                discount:
+                  type: number
+                  example: 500
+                  description: Discount amount to apply
+      responses:
+        '200':
+          description: Discount applied successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    type: object
+                    properties:
+                      _id:
+                        type: string
+                      price:
+                        type: number
+                      actualPrice:
+                        type: number
+                  message:
+                    type: string
+                    example: Discount applied successfully.
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '403':
+          description: Bad request - required fields missing
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: leadId and Discount are required
+                  status:
+                    type: integer
+                    example: 403
+        '404':
+          description: Lead does not exist
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    type: object
+                  message:
+                    type: string
+                    example: Lead does not exist.
+        '500':
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'

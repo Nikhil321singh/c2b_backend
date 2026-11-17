@@ -1,0 +1,16 @@
+node_modules
+/upload
+.vercel
+.env
+.env.local
+*.zip
+package-lock.json
+
+# Allow swagger.json to be committed for sharing
+!swagger.json
+
+# HSBC PGP/JOSE keys — never commit
+hsbc-keys/
+
+# Blue Dart test-order artefact (shipping label PDF)
+bluedart-*.pdf

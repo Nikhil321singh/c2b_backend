@@ -1,0 +1,215 @@
+paths:
+  /api/sms/sendOtp:
+    post:
+      tags:
+        - SMS
+      summary: Send OTP
+      description: Send OTP to mobile number via SMS (rate limited - 3 attempts per 10 minutes)
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - mobileNumber
+              properties:
+                mobileNumber:
+                  type: string
+                  example: '9876543210'
+                  description: Mobile number without country code (will be prefixed with 91)
+      responses:
+        '200':
+          description: OTP sent successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  msg91Response:
+                    type: object
+                    description: Response from MSG91 service
+        '400':
+          description: Mobile number is required
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                    example: Mobile number is required
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '429':
+          description: Too many requests - rate limit exceeded
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                    example: Too many OTP requests. Please try again later.
+        '500':
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+
+  /api/sms/resendOtp:
+    post:
+      tags:
+        - SMS
+      summary: Resend OTP
+      description: Resend OTP to mobile number via SMS (rate limited - 3 attempts per 10 minutes)
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - mobileNumber
+              properties:
+                mobileNumber:
+                  type: string
+                  example: '9876543210'
+                  description: Mobile number without country code (will be prefixed with 91)
+      responses:
+        '200':
+          description: OTP resent successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  msg91Response:
+                    type: object
+                    description: Response from MSG91 service
+        '400':
+          description: Mobile number is required
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                    example: Mobile number is required
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '429':
+          description: Too many requests - rate limit exceeded
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                    example: Too many OTP requests. Please try again later.
+        '500':
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+
+  /api/sms/verifyOtp:
+    post:
+      tags:
+        - SMS
+      summary: Verify OTP
+      description: Verify OTP sent to mobile number (rate limited - 5 attempts per 5 minutes)
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - mobileNumber
+                - otp
+              properties:
+                mobileNumber:
+                  type: string
+                  example: '9876543210'
+                  description: Mobile number
+                otp:
+                  type: string
+                  example: '123456'
+                  description: 6-digit OTP received via SMS
+      responses:
+        '200':
+          description: OTP verified successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+        '400':
+          description: Invalid request or OTP
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                    example: Invalid OTP
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '429':
+          description: Too many requests - rate limit exceeded
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                    example: Too many OTP verification attempts. Please try again later.
+        '500':
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string

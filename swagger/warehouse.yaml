@@ -1,0 +1,92 @@
+paths:
+  /api/warehouse/leads:
+    get:
+      tags: [Warehouse]
+      summary: List scoped Warehouse leads
+      parameters:
+        - in: query
+          name: tab
+          schema:
+            type: string
+            enum: [unassigned, assigned, picked-up, cancelled]
+      responses:
+        '200': { description: Warehouse lead list }
+  /api/warehouse/logistic-agents:
+    get:
+      tags: [Warehouse]
+      summary: List active Logistic users under the actor company
+      responses:
+        '200': { description: Logistic agents }
+  /api/warehouse/leads/{leadId}/assign:
+    post:
+      tags: [Warehouse]
+      summary: Assign a Warehouse lead to an active Logistic agent
+      parameters:
+        - in: path
+          name: leadId
+          required: true
+          schema: { type: string }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [logisticAgentId]
+              properties:
+                logisticAgentId: { type: string }
+      responses:
+        '200': { description: Lead assigned and moved Out For Pickup }
+  /api/warehouse/leads/{leadId}/status:
+    post:
+      tags: [Warehouse]
+      summary: Apply a validated Warehouse delivery transition
+      parameters:
+        - in: path
+          name: leadId
+          required: true
+          schema: { type: string }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [deliveryStatus]
+              properties:
+                deliveryStatus:
+                  type: string
+                  enum: [PICKUP_COMPLETE, DELIVERED]
+      responses:
+        '200': { description: Delivery status updated }
+        '409': { description: Invalid transition }
+  /api/warehouse/leads/{leadId}/cancel:
+    post:
+      tags: [Warehouse]
+      summary: Cancel a non-delivered Warehouse lead
+      parameters:
+        - in: path
+          name: leadId
+          required: true
+          schema: { type: string }
+      responses:
+        '200': { description: Lead cancelled }
+  /api/warehouse/leads/{leadId}/restore:
+    post:
+      tags: [Warehouse]
+      summary: Restore a cancelled lead (Company Admin or Super Admin)
+      parameters:
+        - in: path
+          name: leadId
+          required: true
+          schema: { type: string }
+      responses:
+        '200': { description: Lead restored to Unassigned }
+  /api/warehouse/push-to-logistics:
+    post:
+      tags: [Warehouse]
+      summary: Push eligible leads to the configured courier adapter
+      responses:
+        '200': { description: Per-lead push summary }
+        '503': { description: Courier API is not configured }
+

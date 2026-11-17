@@ -1,0 +1,294 @@
+paths:
+  /api/liquidators/findall:
+    get:
+      tags:
+        - Liquidators
+      summary: Get all liquidators
+      description: Retrieve list of all liquidators with pagination and search
+      security:
+        - bearerAuth: []
+      parameters:
+        - in: query
+          name: limit
+          schema:
+            type: integer
+            default: 10
+            example: 10
+          description: Number of records per page
+        - in: query
+          name: page
+          schema:
+            type: integer
+            default: 0
+            example: 0
+          description: Page number (0-indexed)
+        - in: query
+          name: search
+          schema:
+            type: string
+            example: Liquidator Name
+          description: Search term (searches in name and uniqueCode)
+      responses:
+        '200':
+          description: Liquidators retrieved successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        _id:
+                          type: string
+                        name:
+                          type: string
+                        uniqueCode:
+                          type: string
+                        email:
+                          type: string
+                        phoneNumber:
+                          type: string
+                        address:
+                          type: string
+                        createdAt:
+                          type: string
+                          format: date-time
+                        updatedAt:
+                          type: string
+                          format: date-time
+                  message:
+                    type: string
+                    example: Successfully Fetched Liquidators
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '500':
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+
+  /api/liquidators/create:
+    post:
+      tags:
+        - Liquidators
+      summary: Create new liquidator
+      description: Create a new liquidator entry
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - name
+                - uniqueCode
+              properties:
+                name:
+                  type: string
+                  example: ABC Liquidators
+                  description: Name of the liquidator
+                uniqueCode:
+                  type: string
+                  example: LQD001
+                  description: Unique code for the liquidator (must be unique)
+                email:
+                  type: string
+                  format: email
+                  example: contact@abcliquidators.com
+                  description: Email address of the liquidator
+                phoneNumber:
+                  type: string
+                  example: '9876543210'
+                  description: Phone number of the liquidator
+                address:
+                  type: string
+                  example: 123 Business Street, Mumbai
+                  description: Address of the liquidator
+      responses:
+        '200':
+          description: Liquidator created successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    type: object
+                  message:
+                    type: string
+                    example: Liquidator Created Successfully.
+        '400':
+          description: Liquidator already exists
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: Liquidator Already Exist.
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '500':
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+
+  /api/liquidators/update:
+    put:
+      tags:
+        - Liquidators
+      summary: Update liquidator
+      description: Update an existing liquidator's information
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - id
+              properties:
+                id:
+                  type: string
+                  example: 60d5ec49f1b2c72b8c8e4f1a
+                  description: ID of the liquidator to update
+                name:
+                  type: string
+                  example: ABC Liquidators
+                  description: Updated name of the liquidator
+                uniqueCode:
+                  type: string
+                  example: LQD001
+                  description: Updated unique code
+                email:
+                  type: string
+                  format: email
+                  example: contact@abcliquidators.com
+                  description: Updated email address
+                phoneNumber:
+                  type: string
+                  example: '9876543210'
+                  description: Updated phone number
+                address:
+                  type: string
+                  example: 123 Business Street, Mumbai
+                  description: Updated address
+      responses:
+        '200':
+          description: Liquidator updated successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: Liquidator Updated Successfully.
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '404':
+          description: Liquidator not found
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: Liquidator Not Found
+        '500':
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+
+  /api/liquidators/delete:
+    put:
+      tags:
+        - Liquidators
+      summary: Delete liquidator
+      description: Delete a liquidator by ID (requires Super Admin or Admin Manager role)
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - id
+              properties:
+                id:
+                  type: string
+                  example: 60d5ec49f1b2c72b8c8e4f1a
+                  description: ID of the liquidator to delete
+      responses:
+        '200':
+          description: Liquidator deleted successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: Liquidator Deleted Successfully
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '403':
+          description: Forbidden - insufficient permissions
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  msg:
+                    type: string
+                    example: 'Unauthorized: You do not have permission to delete a Liquidator.'
+        '500':
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  msg:
+                    type: string

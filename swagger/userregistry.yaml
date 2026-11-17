@@ -1,0 +1,563 @@
+paths:
+  /api/userregistry/all:
+    get:
+      tags:
+        - User Registry
+      summary: Get all users
+      description: Retrieve list of all registered users (Super Admin and Admin Manager only)
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: Users retrieved successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    type: array
+                    items:
+                      type: object
+                  msg:
+                    type: string
+                    example: Successfully fetched all users
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '403':
+          description: Forbidden - insufficient permissions
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  /api/userregistry/search:
+    get:
+      tags:
+        - User Registry
+      summary: Search users
+      description: Search users by ID, name, phone, email, role, or store (Super Admin and Admin Manager only)
+      security:
+        - bearerAuth: []
+      parameters:
+        - in: query
+          name: uid
+          schema:
+            type: string
+            example: John
+          description: Search by user ID, first name, last name, name, phone number, or email
+        - in: query
+          name: role
+          schema:
+            type: string
+            example: Sale User
+          description: Filter by user role
+        - in: query
+          name: storeName
+          schema:
+            type: string
+            example: Mumbai Store
+          description: Filter by store name (Super Admin only)
+      responses:
+        '200':
+          description: Search results retrieved successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    type: array
+                    items:
+                      type: object
+                  msg:
+                    type: string
+                    example: Successfully searched data
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '403':
+          description: Forbidden - insufficient permissions
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  /api/userregistry/register:
+    post:
+      tags:
+        - User Registry
+      summary: Register new user
+      description: Create a new user account (no authentication required)
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - storeId
+                - email
+                - password
+                - role
+                - phoneNumber
+              properties:
+                firstName:
+                  type: string
+                  example: John
+                lastName:
+                  type: string
+                  example: Doe
+                email:
+                  type: string
+                  format: email
+                  example: john.doe@example.com
+                password:
+                  type: string
+                  format: password
+                  example: password123
+                  description: Minimum 6 characters
+                phoneNumber:
+                  type: string
+                  example: '9876543210'
+                role:
+                  type: string
+                  enum: [Sale User, Technician, Admin Manager]
+                  example: Sale User
+                storeId:
+                  type: string
+                  example: 60d5ec49f1b2c72b8c8e4f1a
+                  description: Store ID to assign user
+                address:
+                  type: string
+                  example: 123 Main Street, Mumbai
+                city:
+                  type: string
+                  example: Mumbai
+      responses:
+        '200':
+          description: User registered successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  msg:
+                    type: string
+                    example: User registered successfully.
+        '422':
+          description: Validation error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '500':
+          description: Registration failed
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  /api/userregistry/updatePassword:
+    post:
+      tags:
+        - User Registry
+      summary: Update user password
+      description: Change password for authenticated user
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - email
+                - oldPassword
+                - newPassword
+              properties:
+                email:
+                  type: string
+                  format: email
+                  example: john.doe@example.com
+                oldPassword:
+                  type: string
+                  format: password
+                  example: oldPassword123
+                newPassword:
+                  type: string
+                  format: password
+                  example: newPassword123
+                  description: Minimum 6 characters
+      responses:
+        '200':
+          description: Password updated successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  msg:
+                    type: string
+                    example: Successfully updated user password. Please login again.
+        '400':
+          description: Incorrect old password
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '422':
+          description: User does not exist
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  /api/userregistry/update:
+    put:
+      tags:
+        - User Registry
+      summary: Update user details
+      description: Update user information (Super Admin and Admin Manager only)
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - userID
+                - role
+              properties:
+                userID:
+                  type: string
+                  example: 60d5ec49f1b2c72b8c8e4f1a
+                  description: User ID to update
+                firstName:
+                  type: string
+                  example: John
+                lastName:
+                  type: string
+                  example: Doe
+                email:
+                  type: string
+                  format: email
+                  example: john.doe@example.com
+                phoneNumber:
+                  type: string
+                  example: '9876543210'
+                role:
+                  type: string
+                  enum: [Sale User, Technician, Admin Manager]
+                  example: Sale User
+                storeId:
+                  type: string
+                  example: 60d5ec49f1b2c72b8c8e4f1a
+                address:
+                  type: string
+                  example: 123 Main Street, Mumbai
+                city:
+                  type: string
+                  example: Mumbai
+      responses:
+        '200':
+          description: User updated successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    type: object
+                  msg:
+                    type: string
+                    example: Successfully updated user data
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '403':
+          description: Forbidden - insufficient permissions
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '404':
+          description: User not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '422':
+          description: Invalid role assignment
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  /api/userregistry/delete:
+    delete:
+      tags:
+        - User Registry
+      summary: Delete user
+      description: Delete a user account (Super Admin only)
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - userID
+              properties:
+                userID:
+                  type: string
+                  example: 60d5ec49f1b2c72b8c8e4f1a
+                  description: User ID to delete
+      responses:
+        '200':
+          description: User deleted successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: User deleted successfully
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '403':
+          description: Forbidden - Super Admin only
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '500':
+          description: Failed to delete user
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  /api/userregistry/bulk-upload:
+    post:
+      tags:
+        - User Registry
+      summary: Bulk upload users
+      description: Upload multiple users from CSV or Excel file (Super Admin and Admin Manager only)
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              required:
+                - file
+              properties:
+                file:
+                  type: string
+                  format: binary
+                  description: CSV or Excel file with user data (max 5MB)
+      responses:
+        '200':
+          description: File processed successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  msg:
+                    type: string
+                    example: File processed successfully.
+                  result:
+                    type: object
+                    properties:
+                      total:
+                        type: number
+                        example: 100
+                      succeededCount:
+                        type: number
+                        example: 95
+                      failedCount:
+                        type: number
+                        example: 5
+                      failedRecordsForCSV:
+                        type: array
+                        items:
+                          type: array
+        '400':
+          description: No file uploaded or empty file
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '403':
+          description: Forbidden - insufficient permissions
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '500':
+          description: Processing failed
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  /api/userregistry/bulk-upload/history:
+    get:
+      tags:
+        - User Registry
+      summary: Get bulk upload history
+      description: Retrieve history of all bulk upload operations (Super Admin and Admin Manager only)
+      security:
+        - bearerAuth: []
+      parameters:
+        - in: query
+          name: page
+          schema:
+            type: number
+            default: 1
+            example: 1
+          description: Page number
+        - in: query
+          name: limit
+          schema:
+            type: number
+            default: 10
+            example: 20
+          description: Number of records per page
+      responses:
+        '200':
+          description: Upload history retrieved successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    type: array
+                    items:
+                      type: object
+                  pagination:
+                    type: object
+                    properties:
+                      currentPage:
+                        type: number
+                        example: 1
+                      totalPages:
+                        type: number
+                        example: 5
+                      totalRecords:
+                        type: number
+                        example: 50
+                  msg:
+                    type: string
+                    example: Successfully fetched upload history.
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '403':
+          description: Forbidden - insufficient permissions
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  /api/userregistry/bulk-upload/history/{uploadId}:
+    get:
+      tags:
+        - User Registry
+      summary: Get upload log details
+      description: Retrieve detailed logs for a specific bulk upload operation (Super Admin and Admin Manager only)
+      security:
+        - bearerAuth: []
+      parameters:
+        - in: path
+          name: uploadId
+          required: true
+          schema:
+            type: string
+            example: 60d5ec49f1b2c72b8c8e4f1a
+          description: Upload job ID
+      responses:
+        '200':
+          description: Upload log details retrieved successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        uploadId:
+                          type: string
+                        rowNumber:
+                          type: number
+                        rowData:
+                          type: object
+                        status:
+                          type: string
+                          enum: [Success, Fail]
+                        errorMessage:
+                          type: string
+                  msg:
+                    type: string
+                    example: Successfully fetched log details.
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '403':
+          description: Forbidden - insufficient permissions
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '404':
+          description: Upload job not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'

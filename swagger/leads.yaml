@@ -1,0 +1,559 @@
+paths:
+  /api/prospects/findAll:
+    get:
+      tags:
+        - Prospects (Leads)
+      summary: Get all prospects
+      description: Retrieve paginated list of all prospects/leads with optional filters
+      security:
+        - bearerAuth: []
+      parameters:
+        - in: query
+          name: page
+          schema:
+            type: number
+            default: 0
+            example: 0
+          description: Page number for pagination
+        - in: query
+          name: rid
+          schema:
+            type: string
+            example: iPhone
+          description: Search by model name, unique code, IMEI, or user name
+        - in: query
+          name: customerPhone
+          schema:
+            type: string
+            example: '9876543210'
+          description: Search by customer name, phone number, or email
+        - in: query
+          name: time
+          schema:
+            type: string
+            enum: [today, week, month, year]
+            example: week
+          description: Time range filter
+        - in: query
+          name: fromdate
+          schema:
+            type: string
+            format: date
+            example: 2024-06-01
+          description: Start date for custom date range
+        - in: query
+          name: todate
+          schema:
+            type: string
+            format: date
+            example: 2024-06-30
+          description: End date for custom date range
+        - in: query
+          name: id
+          schema:
+            type: string
+            example: 60d5ec49f1b2c72b8c8e4f1a
+          description: Specific lead ID
+        - in: query
+          name: customerId
+          schema:
+            type: string
+            example: 60d5ec49f1b2c72b8c8e4f1b
+          description: Customer ID filter
+        - in: query
+          name: deviceType
+          schema:
+            type: string
+            default: CTG1
+            example: CTG1
+          description: Device type filter
+        - in: query
+          name: grestRec
+          schema:
+            type: string
+            enum: [yes, no]
+            example: yes
+          description: Filter by whether Grest received the device
+        - in: query
+          name: store
+          schema:
+            type: string
+            example: 60d5ec49f1b2c72b8c8e4f1c
+          description: Store ID filter (Super Admin only)
+        - in: query
+          name: region
+          schema:
+            type: string
+            example: North
+          description: Region filter (Super Admin only)
+        - in: query
+          name: storeName
+          schema:
+            type: string
+            example: Delhi Store
+          description: Store name filter (Super Admin only)
+      responses:
+        '200':
+          description: Prospects retrieved successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        _id:
+                          type: string
+                        uniqueCode:
+                          type: string
+                        name:
+                          type: string
+                        phoneNumber:
+                          type: string
+                        emailId:
+                          type: string
+                        is_selled:
+                          type: boolean
+                        status:
+                          type: string
+                        price:
+                          type: number
+                        actualPrice:
+                          type: number
+                        bonusPrice:
+                          type: number
+                        storage:
+                          type: string
+                        ram:
+                          type: string
+                        userId:
+                          type: object
+                        documentId:
+                          type: object
+                        modelId:
+                          type: object
+                        store:
+                          type: object
+                        categoryInfo:
+                          type: object
+                        grestReceived:
+                          type: string
+                          enum: [yes, no]
+                        grestRecDate:
+                          type: string
+                          format: date-time
+                        createdAt:
+                          type: string
+                          format: date-time
+                        updatedAt:
+                          type: string
+                          format: date-time
+                  totalCounts:
+                    type: number
+                    example: 150
+                  message:
+                    type: string
+                    example: successfully found leads
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '403':
+          description: Forbidden
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: Forbidden
+
+  /api/prospects/findAllSelled:
+    get:
+      tags:
+        - Prospects (Leads)
+      summary: Get all sold prospects
+      description: Retrieve paginated list of all sold prospects/leads
+      security:
+        - bearerAuth: []
+      parameters:
+        - in: query
+          name: page
+          schema:
+            type: number
+            default: 0
+            example: 0
+          description: Page number for pagination
+        - in: query
+          name: rid
+          schema:
+            type: string
+            example: iPhone
+          description: Search by model name, unique code, IMEI, or user name
+        - in: query
+          name: customerPhone
+          schema:
+            type: string
+            example: '9876543210'
+          description: Search by customer name, phone number, or email
+        - in: query
+          name: time
+          schema:
+            type: string
+            enum: [today, week, month, year]
+            example: week
+          description: Time range filter
+        - in: query
+          name: fromdate
+          schema:
+            type: string
+            format: date
+            example: 2024-06-01
+          description: Start date for custom date range
+        - in: query
+          name: todate
+          schema:
+            type: string
+            format: date
+            example: 2024-06-30
+          description: End date for custom date range
+        - in: query
+          name: deviceType
+          schema:
+            type: string
+            default: CTG1
+            example: CTG1
+          description: Device type filter
+        - in: query
+          name: grestRec
+          schema:
+            type: string
+            enum: [yes, no]
+            example: yes
+          description: Filter by whether Grest received the device
+        - in: query
+          name: store
+          schema:
+            type: string
+            example: 60d5ec49f1b2c72b8c8e4f1c
+          description: Store ID filter
+      responses:
+        '200':
+          description: Sold prospects retrieved successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    type: array
+                    items:
+                      type: object
+                  totalCounts:
+                    type: number
+                    example: 75
+                  message:
+                    type: string
+                    example: successfully found leads
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '403':
+          description: Forbidden
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: Forbidden
+
+  /api/prospects/findLeadById:
+    get:
+      tags:
+        - Prospects (Leads)
+      summary: Get lead by ID
+      description: Retrieve a specific lead by its ID
+      security:
+        - bearerAuth: []
+      parameters:
+        - in: query
+          name: id
+          required: true
+          schema:
+            type: string
+            example: 60d5ec49f1b2c72b8c8e4f1a
+          description: Lead ID
+      responses:
+        '200':
+          description: Lead retrieved successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    type: object
+                  message:
+                    type: string
+                    example: successfully found lead
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '403':
+          description: Forbidden
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: Forbidden
+
+  /api/prospects/findAll/ordercreated:
+    get:
+      tags:
+        - Prospects (Leads)
+      summary: Get order created leads
+      description: Retrieve leads with 'orderCreated' lifecycle event
+      security:
+        - bearerAuth: []
+      parameters:
+        - in: query
+          name: page
+          schema:
+            type: number
+            default: 0
+            example: 0
+          description: Page number for pagination
+        - in: query
+          name: time
+          schema:
+            type: string
+            enum: [today, week, month, year]
+            example: week
+          description: Time range filter
+        - in: query
+          name: fromdate
+          schema:
+            type: string
+            format: date
+            example: 2024-06-01
+          description: Start date for custom date range
+        - in: query
+          name: todate
+          schema:
+            type: string
+            format: date
+            example: 2024-06-30
+          description: End date for custom date range
+        - in: query
+          name: deviceType
+          schema:
+            type: string
+            default: CTG1
+            example: CTG1
+          description: Device type filter
+      responses:
+        '200':
+          description: Order created leads retrieved successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    type: array
+                    items:
+                      type: object
+                  totalCounts:
+                    type: number
+                    example: 30
+                  message:
+                    type: string
+                    example: successfully found leads
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  /api/prospects/findAll/quotecreated:
+    get:
+      tags:
+        - Prospects (Leads)
+      summary: Get quote created leads
+      description: Retrieve leads with 'quoteCreated' lifecycle event
+      security:
+        - bearerAuth: []
+      parameters:
+        - in: query
+          name: page
+          schema:
+            type: number
+            default: 0
+            example: 0
+          description: Page number for pagination
+        - in: query
+          name: time
+          schema:
+            type: string
+            enum: [today, week, month, year]
+            example: week
+          description: Time range filter
+        - in: query
+          name: fromdate
+          schema:
+            type: string
+            format: date
+            example: 2024-06-01
+          description: Start date for custom date range
+        - in: query
+          name: todate
+          schema:
+            type: string
+            format: date
+            example: 2024-06-30
+          description: End date for custom date range
+        - in: query
+          name: deviceType
+          schema:
+            type: string
+            default: CTG1
+            example: CTG1
+          description: Device type filter
+      responses:
+        '200':
+          description: Quote created leads retrieved successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    type: array
+                    items:
+                      type: object
+                  totalCounts:
+                    type: number
+                    example: 45
+                  message:
+                    type: string
+                    example: successfully found leads
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  /api/prospects/Admincalculate:
+    post:
+      tags:
+        - Prospects (Leads)
+      summary: Admin calculate price
+      description: Calculate or recalculate device price based on admin assessment
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - leadId
+                - adminAnswer
+              properties:
+                leadId:
+                  type: string
+                  example: 60d5ec49f1b2c72b8c8e4f1a
+                  description: Lead ID to recalculate
+                adminAnswer:
+                  type: object
+                  description: Admin's assessment of the device condition
+                  properties:
+                    Core:
+                      type: array
+                      items:
+                        type: object
+                    Display:
+                      type: array
+                      items:
+                        type: object
+                    Functional_major:
+                      type: array
+                      items:
+                        type: object
+                    Functional_minor:
+                      type: array
+                      items:
+                        type: object
+                    Cosmetics:
+                      type: array
+                      items:
+                        type: object
+                    Warranty:
+                      type: array
+                      items:
+                        type: object
+                    Functional:
+                      type: array
+                      items:
+                        type: object
+                    Accessories:
+                      type: array
+                      items:
+                        type: object
+      responses:
+        '200':
+          description: Price calculated successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    type: object
+                    properties:
+                      id:
+                        type: string
+                        example: 60d5ec49f1b2c72b8c8e4f1a
+                      price:
+                        type: number
+                        example: 22000
+                      grade:
+                        type: string
+                        example: B+
+                      uniqueCode:
+                        type: string
+                  message:
+                    type: string
+                    example: Price calculated successfully
+        '400':
+          description: Bad request - Missing required fields
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'

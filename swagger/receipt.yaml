@@ -1,0 +1,69 @@
+paths:
+  /api/receipt/generate:
+    post:
+      tags:
+        - Receipt
+      summary: Generate receipt
+      description: Generate a receipt for a transaction or order
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                orderId:
+                  type: string
+                  example: 60d5ec49f1b2c72b8c8e4f1a
+                  description: ID of the order to generate receipt for
+                leadId:
+                  type: string
+                  example: 60d5ec49f1b2c72b8c8e4f1a
+                  description: ID of the lead associated with the receipt
+                customerName:
+                  type: string
+                  example: John Doe
+                  description: Name of the customer
+                amount:
+                  type: number
+                  example: 15000
+                  description: Total amount
+                transactionDetails:
+                  type: object
+                  description: Additional transaction details
+      responses:
+        '200':
+          description: Receipt generated successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  url:
+                    type: string
+                    example: receiptUrl
+                    description: URL to the generated receipt
+        '400':
+          description: Bad request - invalid input
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '500':
+          description: Failed to generate receipt
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                    example: Failed to generate receipt.

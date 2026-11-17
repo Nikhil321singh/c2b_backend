@@ -1,0 +1,347 @@
+paths:
+  /api/quoteTracking/log-quote-attempt:
+    post:
+      tags:
+        - Quote Tracking
+      summary: Log quote attempt
+      description: Log a quote attempt with device details and pricing information
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - quoteType
+                - quoteAmount
+                - deviceDetails
+              properties:
+                quoteType:
+                  type: string
+                  enum: [QuickQuote, Get Exact Value, SavedQuote]
+                  example: Get Exact Value
+                  description: Type of quote
+                quoteAmount:
+                  type: number
+                  minimum: 0
+                  example: 25000
+                  description: Quote amount in currency
+                grade:
+                  type: string
+                  example: A
+                  description: Device grade (optional)
+                deviceDetails:
+                  type: object
+                  required:
+                    - modelId
+                    - name
+                    - brandId
+                    - categoryName
+                    - ram
+                    - rom
+                    - series
+                  properties:
+                    modelId:
+                      type: string
+                      example: 60d5ec49f1b2c72b8c8e4f1a
+                    name:
+                      type: string
+                      example: iPhone 15 Pro
+                    brandId:
+                      type: string
+                      example: 60d5ec49f1b2c72b8c8e4f1b
+                    categoryName:
+                      type: string
+                      example: Smartphone
+                    ram:
+                      type: string
+                      example: 8GB
+                    rom:
+                      type: string
+                      example: 256GB
+                    series:
+                      type: string
+                      example: iPhone 15 Series
+      responses:
+        '201':
+          description: Quote attempt logged successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: Quote attempt logged successfully.
+        '400':
+          description: Bad request - Validation error
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: Missing required field in deviceDetails
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '404':
+          description: User not found
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: Authenticated user not found.
+
+  /api/quoteTracking/dashboard:
+    get:
+      tags:
+        - Quote Tracking
+      summary: Get quote tracking dashboard
+      description: Retrieve paginated quote tracking data with filters for date range, search, and store
+      security:
+        - bearerAuth: []
+      parameters:
+        - in: query
+          name: page
+          schema:
+            type: number
+            default: 1
+            example: 1
+          description: Page number
+        - in: query
+          name: limit
+          schema:
+            type: number
+            default: 10
+            example: 10
+          description: Items per page
+        - in: query
+          name: dateRange
+          schema:
+            type: string
+            enum: [Today, Yesterday, Last 7 Days, 1 Month]
+            example: Last 7 Days
+          description: Date range filter
+        - in: query
+          name: search
+          schema:
+            type: string
+            example: user@example.com
+          description: Search by user email
+        - in: query
+          name: storeId
+          schema:
+            type: string
+            example: 60d5ec49f1b2c72b8c8e4f1a
+          description: Filter by store ID (Super Admin only)
+      responses:
+        '200':
+          description: Dashboard data retrieved successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        userId:
+                          type: string
+                          example: 60d5ec49f1b2c72b8c8e4f1a
+                        email:
+                          type: string
+                          example: user@example.com
+                        role:
+                          type: string
+                          example: user
+                        storeName:
+                          type: string
+                          example: Delhi Store
+                        totalQuotes:
+                          type: number
+                          example: 15
+                        totalQuickQuotes:
+                          type: number
+                          example: 8
+                        sumOfAllQuotes:
+                          type: number
+                          example: 375000
+                        lastActivityDate:
+                          type: string
+                          format: date-time
+                        deviceNameAndCategory:
+                          type: string
+                          example: iPhone 15 Pro
+                        brand:
+                          type: string
+                          example: Apple
+                        deviceDetails:
+                          type: object
+                          properties:
+                            ram:
+                              type: string
+                              example: 8GB
+                            rom:
+                              type: string
+                              example: 256GB
+                  pagination:
+                    type: object
+                    properties:
+                      currentPage:
+                        type: number
+                        example: 1
+                      totalPages:
+                        type: number
+                        example: 5
+                      totalRecords:
+                        type: number
+                        example: 50
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  /api/quoteTracking/activity-log/{targetUserId}:
+    get:
+      tags:
+        - Quote Tracking
+      summary: Get user activity log
+      description: Retrieve detailed activity log for a specific user
+      security:
+        - bearerAuth: []
+      parameters:
+        - in: path
+          name: targetUserId
+          required: true
+          schema:
+            type: string
+            example: 60d5ec49f1b2c72b8c8e4f1a
+          description: User ID to get activity log for
+      responses:
+        '200':
+          description: Activity log retrieved successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  logs:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        timestamp:
+                          type: string
+                          format: date-time
+                        deviceDetails:
+                          type: object
+                          properties:
+                            modelId:
+                              type: string
+                            name:
+                              type: string
+                            brandId:
+                              type: string
+                            categoryName:
+                              type: string
+                            ram:
+                              type: string
+                            rom:
+                              type: string
+                            series:
+                              type: string
+                        quoteType:
+                          type: string
+                          enum: [QuickQuote, Get Exact Value, SavedQuote]
+                        quoteAmount:
+                          type: number
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '403':
+          description: Forbidden - User can only view logs for users in their own store
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: Forbidden
+        '404':
+          description: Target user not found
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: Target user not found.
+
+  /api/quoteTracking/dashboard/download:
+    get:
+      tags:
+        - Quote Tracking
+      summary: Download quote tracking report
+      description: Download quote tracking data as CSV file with applied filters
+      security:
+        - bearerAuth: []
+      parameters:
+        - in: query
+          name: dateRange
+          schema:
+            type: string
+            enum: [Today, Yesterday, Last 7 Days, 1 Month]
+            example: Last 7 Days
+          description: Date range filter
+        - in: query
+          name: search
+          schema:
+            type: string
+            example: user@example.com
+          description: Search by user email
+        - in: query
+          name: storeId
+          schema:
+            type: string
+            example: 60d5ec49f1b2c72b8c8e4f1a
+          description: Filter by store ID (Super Admin only)
+      responses:
+        '200':
+          description: CSV file generated successfully
+          content:
+            text/csv:
+              schema:
+                type: string
+                format: binary
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '404':
+          description: No data to export
+          content:
+            text/plain:
+              schema:
+                type: string
+                example: No data to export for the selected filters.

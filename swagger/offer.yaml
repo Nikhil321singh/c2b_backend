@@ -1,0 +1,263 @@
+paths:
+  /api/offer/create:
+    post:
+      tags:
+        - Offer
+      summary: Create new offer
+      description: Create a new offer with details like name, price, validity dates and warranty
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - offerName
+                - price
+                - validFrom
+                - validTo
+                - warranty
+              properties:
+                offerName:
+                  type: string
+                  example: Summer Sale 2024
+                price:
+                  type: number
+                  example: 5000
+                validFrom:
+                  type: string
+                  format: date-time
+                  example: 2024-06-01T00:00:00.000Z
+                validTo:
+                  type: string
+                  format: date-time
+                  example: 2024-08-31T23:59:59.000Z
+                warranty:
+                  type: boolean
+                  example: true
+      responses:
+        '201':
+          description: Offer created successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  _id:
+                    type: string
+                    example: 60d5ec49f1b2c72b8c8e4f1a
+                  offerName:
+                    type: string
+                    example: Summer Sale 2024
+                  price:
+                    type: number
+                    example: 5000
+                  validFrom:
+                    type: string
+                    format: date-time
+                  validTo:
+                    type: string
+                    format: date-time
+                  createdBy:
+                    type: string
+                    example: 60d5ec49f1b2c72b8c8e4f1a
+                  warranty:
+                    type: boolean
+                    example: true
+        '400':
+          description: Bad request - All fields are required
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  /api/offer/edit/{id}:
+    put:
+      tags:
+        - Offer
+      summary: Edit existing offer
+      description: Update an existing offer by ID
+      security:
+        - bearerAuth: []
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: string
+            example: 60d5ec49f1b2c72b8c8e4f1a
+          description: Offer ID
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - offerName
+                - price
+                - validFrom
+                - validTo
+                - warranty
+              properties:
+                offerName:
+                  type: string
+                  example: Updated Offer Name
+                price:
+                  type: number
+                  example: 6000
+                validFrom:
+                  type: string
+                  format: date-time
+                  example: 2024-06-01T00:00:00.000Z
+                validTo:
+                  type: string
+                  format: date-time
+                  example: 2024-09-30T23:59:59.000Z
+                warranty:
+                  type: boolean
+                  example: false
+      responses:
+        '200':
+          description: Offer updated successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: sucessfully updated offer
+        '400':
+          description: Bad request - All fields are required
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '404':
+          description: Offer not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  /api/offer/getOfferList:
+    get:
+      tags:
+        - Offer
+      summary: Get all offers
+      description: Retrieve list of all offers with optional search and date range filters
+      security:
+        - bearerAuth: []
+      parameters:
+        - in: query
+          name: search
+          schema:
+            type: string
+            example: Summer
+          description: Search by offer name, price or warranty status
+        - in: query
+          name: fromdate
+          schema:
+            type: string
+            format: date
+            example: 2024-06-01
+          description: Filter offers valid from this date
+        - in: query
+          name: todate
+          schema:
+            type: string
+            format: date
+            example: 2024-08-31
+          description: Filter offers valid until this date
+      responses:
+        '200':
+          description: List of offers
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  type: object
+                  properties:
+                    _id:
+                      type: string
+                      example: 60d5ec49f1b2c72b8c8e4f1a
+                    offerName:
+                      type: string
+                      example: Summer Sale 2024
+                    price:
+                      type: number
+                      example: 5000
+                    validFrom:
+                      type: string
+                      format: date-time
+                    validTo:
+                      type: string
+                      format: date-time
+                    createdBy:
+                      type: string
+                      example: 60d5ec49f1b2c72b8c8e4f1a
+                    warranty:
+                      type: boolean
+                      example: true
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  /api/offer/delete/{id}:
+    delete:
+      tags:
+        - Offer
+      summary: Delete offer
+      description: Delete an existing offer by ID
+      security:
+        - bearerAuth: []
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: string
+            example: 60d5ec49f1b2c72b8c8e4f1a
+          description: Offer ID
+      responses:
+        '200':
+          description: Offer deleted successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: Offer successfully deleted
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '404':
+          description: Offer not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'

@@ -1,0 +1,207 @@
+{
+  "info": {
+    "_postman_id": "8a16610a-31e2-4f4b-95ca-grest-hsbc-uat",
+    "name": "GREST C2B - HSBC UPI Payout UAT",
+    "description": "Sanitized UAT requests for the GREST merchant-to-customer HSBC UPI payout flow. Obtain authToken through the normal GREST login and obtain customerToken from the newest delivered payout link.",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "variable": [
+    {
+      "key": "baseUrl",
+      "value": "http://localhost:7002"
+    },
+    {
+      "key": "authToken",
+      "value": ""
+    },
+    {
+      "key": "payoutId",
+      "value": ""
+    },
+    {
+      "key": "customerToken",
+      "value": ""
+    },
+    {
+      "key": "testVpa",
+      "value": "7776968905@hsbc"
+    }
+  ],
+  "item": [
+    {
+      "name": "01 - Configuration readiness",
+      "request": {
+        "method": "GET",
+        "header": [
+          {
+            "key": "Authorization",
+            "value": "{{authToken}}"
+          }
+        ],
+        "url": "{{baseUrl}}/api/buyback-payouts/configuration-status",
+        "description": "Expected for UAT: configured=true, mockMode=false, developmentOverrideEnabled=false and uatReady=true."
+      }
+    },
+    {
+      "name": "02 - List scoped payouts",
+      "request": {
+        "method": "GET",
+        "header": [
+          {
+            "key": "Authorization",
+            "value": "{{authToken}}"
+          }
+        ],
+        "url": "{{baseUrl}}/api/buyback-payouts?limit=20&page=1"
+      }
+    },
+    {
+      "name": "03 - Get payout",
+      "request": {
+        "method": "GET",
+        "header": [
+          {
+            "key": "Authorization",
+            "value": "{{authToken}}"
+          }
+        ],
+        "url": "{{baseUrl}}/api/buyback-payouts/{{payoutId}}"
+      }
+    },
+    {
+      "name": "04 - Pay Now / send customer link",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Authorization",
+            "value": "{{authToken}}"
+          },
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{}"
+        },
+        "url": "{{baseUrl}}/api/buyback-payouts/{{payoutId}}/resend-link",
+        "description": "Use once while status is AWAITING_VPA and linkNotificationState is not DELIVERED. Copy customerToken from the newest delivered link."
+      }
+    },
+    {
+      "name": "05 - Public customer payout details",
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": "{{baseUrl}}/api/buyback-payouts/public/{{customerToken}}"
+      }
+    },
+    {
+      "name": "06 - Verify customer UPI ID",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"vpa\": \"{{testVpa}}\"\n}"
+        },
+        "url": "{{baseUrl}}/api/buyback-payouts/public/{{customerToken}}/vpa"
+      }
+    },
+    {
+      "name": "07 - Approve payout",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Authorization",
+            "value": "{{authToken}}"
+          },
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"approved\": true,\n  \"remarks\": \"Approved during HSBC UPI UAT\"\n}"
+        },
+        "url": "{{baseUrl}}/api/buyback-payouts/{{payoutId}}/approval",
+        "description": "Administrative role required. Use only when status is PENDING_APPROVAL."
+      }
+    },
+    {
+      "name": "08 - Reject payout",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Authorization",
+            "value": "{{authToken}}"
+          },
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"approved\": false,\n  \"remarks\": \"Rejected during negative UAT scenario\"\n}"
+        },
+        "url": "{{baseUrl}}/api/buyback-payouts/{{payoutId}}/approval",
+        "description": "Run on a separate pending-approval payout."
+      }
+    },
+    {
+      "name": "09 - Make payment",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Authorization",
+            "value": "{{authToken}}"
+          },
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{}"
+        },
+        "url": "{{baseUrl}}/api/buyback-payouts/{{payoutId}}/pay",
+        "description": "Financial action. Confirm payout ID, amount, customer and UAT environment before sending."
+      }
+    },
+    {
+      "name": "10 - Check payment status",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Authorization",
+            "value": "{{authToken}}"
+          },
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{}"
+        },
+        "url": "{{baseUrl}}/api/buyback-payouts/{{payoutId}}/status",
+        "description": "Use for PROCESSING or STATUS_UNKNOWN. Do not initiate a second payment while the result is unknown."
+      }
+    }
+  ]
+}

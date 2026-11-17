@@ -1,0 +1,95 @@
+paths:
+  /api/masters/add-many:
+    post:
+      tags:
+        - Masters
+      summary: Bulk add master data
+      description: Upload and add multiple master data entries from CSV file
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              required:
+                - file
+              properties:
+                file:
+                  type: string
+                  format: binary
+                  description: CSV file containing master data entries
+                dataType:
+                  type: string
+                  example: brands
+                  description: Type of master data being uploaded (brands, models, categories, etc.)
+      responses:
+        '200':
+          description: Master data added successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  message:
+                    type: string
+                    example: Master data processed successfully
+                  data:
+                    type: object
+                    properties:
+                      totalProcessed:
+                        type: integer
+                        example: 100
+                      inserted:
+                        type: integer
+                        example: 80
+                      updated:
+                        type: integer
+                        example: 20
+                      errors:
+                        type: array
+                        items:
+                          type: object
+                          properties:
+                            row:
+                              type: integer
+                            error:
+                              type: string
+        '400':
+          description: Bad request - invalid file or data format
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: false
+                  message:
+                    type: string
+                    example: Invalid CSV file format
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '500':
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: false
+                  message:
+                    type: string
+                    example: Failed to process master data
+                  error:
+                    type: string

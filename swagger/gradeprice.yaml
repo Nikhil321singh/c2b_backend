@@ -1,0 +1,182 @@
+paths:
+  /api/grades/addEditModelsAndPrice:
+    post:
+      tags:
+        - Grade Prices
+      summary: Add or edit models and prices
+      description: Upload and process model price data from CSV file
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              required:
+                - file
+              properties:
+                file:
+                  type: string
+                  format: binary
+                  description: CSV file containing model and price information
+      responses:
+        '200':
+          description: Models and prices processed successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  message:
+                    type: string
+                    example: Models and prices updated successfully
+        '400':
+          description: Bad request - invalid file or data
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '500':
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  /api/grades/modelPriceList:
+    get:
+      tags:
+        - Grade Prices
+      summary: Get model price list
+      description: Retrieve list of models with their prices
+      parameters:
+        - in: query
+          name: brandId
+          schema:
+            type: string
+            example: 60d5ec49f1b2c72b8c8e4f1a
+          description: Filter by brand ID
+        - in: query
+          name: modelId
+          schema:
+            type: string
+            example: 60d5ec49f1b2c72b8c8e4f1a
+          description: Filter by model ID
+        - in: query
+          name: type
+          schema:
+            type: string
+            example: CTG1
+          description: Filter by device type
+      responses:
+        '200':
+          description: Model price list retrieved successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  data:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        modelId:
+                          type: string
+                        modelName:
+                          type: string
+                        brandName:
+                          type: string
+                        prices:
+                          type: object
+        '400':
+          description: Bad request
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '500':
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  /api/grades/getModelWisePrice:
+    get:
+      tags:
+        - Grade Prices
+      summary: Get model-wise price details
+      description: Retrieve detailed price information for a specific model
+      parameters:
+        - in: query
+          name: modelId
+          required: true
+          schema:
+            type: string
+            example: 60d5ec49f1b2c72b8c8e4f1a
+          description: ID of the model to get price details for
+        - in: query
+          name: storage
+          schema:
+            type: string
+            example: 128GB
+          description: Filter by storage capacity
+        - in: query
+          name: grade
+          schema:
+            type: string
+            example: A
+          description: Filter by grade
+      responses:
+        '200':
+          description: Model price details retrieved successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  data:
+                    type: object
+                    properties:
+                      modelId:
+                        type: string
+                      modelName:
+                        type: string
+                      prices:
+                        type: array
+                        items:
+                          type: object
+                          properties:
+                            storage:
+                              type: string
+                            grade:
+                              type: string
+                            price:
+                              type: number
+        '400':
+          description: Bad request - modelId is required
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '404':
+          description: Model not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '500':
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'

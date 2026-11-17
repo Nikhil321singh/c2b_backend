@@ -1,0 +1,414 @@
+paths:
+  /api/company/create:
+    post:
+      tags:
+        - Company
+      summary: Create new company
+      description: Create a new company with optional document uploads
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              required:
+                - companyName
+                - uniqueId
+                - companyCode
+                - contactNumber
+                - address
+                - gstNumber
+                - panNumber
+                - remarks
+              properties:
+                companyName:
+                  type: string
+                  example: ABC Company Ltd
+                  description: Name of the company
+                uniqueId:
+                  type: string
+                  example: COMP001
+                  description: Unique identifier for the company
+                companyCode:
+                  type: string
+                  example: ABC123
+                  description: Company code
+                contactNumber:
+                  type: string
+                  example: '9876543210'
+                  description: Company contact number
+                address:
+                  type: string
+                  example: 123 Business Street, Mumbai
+                  description: Company address
+                gstNumber:
+                  type: string
+                  example: 27AABCU9603R1ZM
+                  description: GST number (must be unique)
+                panNumber:
+                  type: string
+                  example: AABCU9603R
+                  description: PAN number
+                remarks:
+                  type: string
+                  example: Premium customer
+                  description: Additional remarks about the company
+                files:
+                  type: array
+                  items:
+                    type: string
+                    format: binary
+                  description: Optional company document files
+      responses:
+        '200':
+          description: Company created successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  result:
+                    type: object
+        '400':
+          description: Validation error
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: Validation error message
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '500':
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                  status:
+                    type: integer
+                    example: 500
+
+  /api/company/edit:
+    put:
+      tags:
+        - Company
+      summary: Update company
+      description: Update existing company information
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              required:
+                - _id
+              properties:
+                _id:
+                  type: string
+                  example: 60d5ec49f1b2c72b8c8e4f1a
+                  description: ID of the company to update
+                id:
+                  type: string
+                  example: 60d5ec49f1b2c72b8c8e4f1a
+                  description: Alternative ID field
+                companyName:
+                  type: string
+                  example: ABC Company Ltd
+                  description: Updated company name
+                uniqueId:
+                  type: string
+                  example: COMP001
+                  description: Updated unique identifier
+                companyCode:
+                  type: string
+                  example: ABC123
+                  description: Updated company code
+                contactNumber:
+                  type: string
+                  example: '9876543210'
+                  description: Updated contact number
+                address:
+                  type: string
+                  example: 123 Business Street, Mumbai
+                  description: Updated address
+                gstNumber:
+                  type: string
+                  example: 27AABCU9603R1ZM
+                  description: Updated GST number
+                panNumber:
+                  type: string
+                  example: AABCU9603R
+                  description: Updated PAN number
+                remarks:
+                  type: string
+                  example: Premium customer
+                  description: Updated remarks
+                files:
+                  type: array
+                  items:
+                    type: string
+                    format: binary
+                  description: Updated document files
+      responses:
+        '200':
+          description: Company updated successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  result:
+                    type: object
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '500':
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                  status:
+                    type: integer
+                    example: 500
+
+  /api/company/deleteById:
+    delete:
+      tags:
+        - Company
+      summary: Delete company
+      description: Delete a company by ID
+      security:
+        - bearerAuth: []
+      parameters:
+        - in: query
+          name: _id
+          schema:
+            type: string
+            example: 60d5ec49f1b2c72b8c8e4f1a
+          description: ID of the company to delete
+        - in: query
+          name: id
+          schema:
+            type: string
+            example: 60d5ec49f1b2c72b8c8e4f1a
+          description: Alternative ID parameter
+      responses:
+        '200':
+          description: Company deleted successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  result:
+                    type: object
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '500':
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                  status:
+                    type: integer
+                    example: 500
+
+  /api/company/findById:
+    get:
+      tags:
+        - Company
+      summary: Find company by ID
+      description: Retrieve a specific company by ID
+      security:
+        - bearerAuth: []
+      parameters:
+        - in: query
+          name: _id
+          schema:
+            type: string
+            example: 60d5ec49f1b2c72b8c8e4f1a
+          description: ID of the company to retrieve
+        - in: query
+          name: id
+          schema:
+            type: string
+            example: 60d5ec49f1b2c72b8c8e4f1a
+          description: Alternative ID parameter
+      responses:
+        '200':
+          description: Company retrieved successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  result:
+                    type: object
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '500':
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                  status:
+                    type: integer
+                    example: 500
+
+  /api/company/findAll:
+    get:
+      tags:
+        - Company
+      summary: Get all companies
+      description: Retrieve list of all companies with pagination and search
+      security:
+        - bearerAuth: []
+      parameters:
+        - in: query
+          name: limit
+          schema:
+            type: integer
+            default: 10
+            example: 10
+          description: Number of records per page
+        - in: query
+          name: page
+          schema:
+            type: integer
+            default: 0
+            example: 0
+          description: Page number (0-indexed)
+        - in: query
+          name: search
+          schema:
+            type: string
+            example: ABC Company
+          description: Search term (searches in companyName, companyCode, contactNumber, uniqueId, address, gstNumber, panNumber)
+      responses:
+        '200':
+          description: Companies retrieved successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  result:
+                    type: array
+                    items:
+                      type: object
+                  totalRecords:
+                    type: integer
+                    example: 50
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '500':
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                  status:
+                    type: integer
+                    example: 500
+
+  /api/company/uploadCompanies:
+    post:
+      tags:
+        - Company
+      summary: Bulk upload companies
+      description: Upload multiple companies from CSV file
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              required:
+                - file
+              properties:
+                file:
+                  type: string
+                  format: binary
+                  description: CSV file containing company data
+      responses:
+        '200':
+          description: Companies uploaded successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  updated:
+                    type: array
+                    items:
+                      type: object
+                    description: List of updated companies
+                  inserted:
+                    type: array
+                    items:
+                      type: object
+                    description: List of newly inserted companies
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '500':
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                  status:
+                    type: integer
+                    example: 500

@@ -1,0 +1,636 @@
+paths:
+  /api/questionnaires/add:
+    post:
+      tags:
+        - Questionnaires
+      summary: Add questionnaire
+      description: Create a new questionnaire question
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - group
+                - yes
+                - no
+                - quetion
+                - default
+              properties:
+                group:
+                  type: string
+                  example: Core
+                  description: Question group/category
+                yes:
+                  type: string
+                  example: CORE_YES
+                  description: Code for yes answer
+                no:
+                  type: string
+                  example: CORE_NO
+                  description: Code for no answer
+                quetion:
+                  type: string
+                  example: Is the device working?
+                  description: Question text
+                default:
+                  type: string
+                  example: 'true'
+                  description: Default value
+                type:
+                  type: string
+                  example: CTG1
+                  description: Device type
+                viewOn:
+                  type: number
+                  example: 1
+                  description: Display order
+      responses:
+        '200':
+          description: Questionnaire created successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    type: object
+                  message:
+                    type: string
+                    example: questionnaires created successfully.
+        '400':
+          description: Bad request - All fields are required
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  /api/questionnaires/add-many:
+    post:
+      tags:
+        - Questionnaires
+      summary: Bulk add questionnaires
+      description: Upload a file to add multiple questionnaires at once
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              required:
+                - file
+              properties:
+                file:
+                  type: string
+                  format: binary
+                  description: CSV or Excel file containing questionnaire data
+      responses:
+        '200':
+          description: Questionnaires created successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    type: array
+                    items:
+                      type: object
+                  message:
+                    type: string
+                    example: questionnaires created successfully.
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  /api/questionnaires/findAll:
+    get:
+      tags:
+        - Questionnaires
+      summary: Get all questionnaires
+      description: Retrieve paginated list of questionnaires filtered by device type
+      security:
+        - bearerAuth: []
+      parameters:
+        - in: query
+          name: page
+          schema:
+            type: number
+            default: 0
+            example: 0
+          description: Page number for pagination
+        - in: query
+          name: type
+          schema:
+            type: string
+            default: CTG1
+            example: CTG1
+          description: Device type filter
+      responses:
+        '200':
+          description: Questionnaires fetched successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    type: array
+                    items:
+                      type: object
+                  totalCounts:
+                    type: number
+                    example: 150
+                  message:
+                    type: string
+                    example: questionnaires fetched successfully.
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  /api/questionnaires/calculatePrice:
+    post:
+      tags:
+        - Questionnaires
+      summary: Calculate device price
+      description: Calculate the price of a device based on questionnaire answers
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - QNA
+                - phoneNumber
+                - modelId
+              properties:
+                QNA:
+                  type: object
+                  description: Question and answer object with device condition assessment
+                  properties:
+                    Core:
+                      type: array
+                      items:
+                        type: object
+                    Display:
+                      type: array
+                      items:
+                        type: object
+                    Functional_major:
+                      type: array
+                      items:
+                        type: object
+                    Functional_minor:
+                      type: array
+                      items:
+                        type: object
+                    Cosmetics:
+                      type: array
+                      items:
+                        type: object
+                    Warranty:
+                      type: array
+                      items:
+                        type: object
+                    Functional:
+                      type: array
+                      items:
+                        type: object
+                    Accessories:
+                      type: array
+                      items:
+                        type: object
+                phoneNumber:
+                  type: string
+                  example: '9876543210'
+                modelId:
+                  type: string
+                  example: 60d5ec49f1b2c72b8c8e4f1a
+                storage:
+                  type: string
+                  example: 128GB
+                name:
+                  type: string
+                  example: John Doe
+                ram:
+                  type: string
+                  example: 8GB
+                aadharNumber:
+                  type: string
+                  example: '123456789012'
+      responses:
+        '200':
+          description: Price calculated successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    type: object
+                    properties:
+                      id:
+                        type: string
+                        example: 60d5ec49f1b2c72b8c8e4f1a
+                      price:
+                        type: number
+                        example: 25000
+                      grade:
+                        type: string
+                        example: A
+                      uniqueCode:
+                        type: string
+                        example: GRC001
+                  message:
+                    type: string
+                    example: Price fetched successfully.
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '403':
+          description: Forbidden - Missing required fields
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: false
+                  message:
+                    type: string
+                    example: QNA, phone number, and modelId are required
+
+  /api/questionnaires/item-purchased:
+    post:
+      tags:
+        - Questionnaires
+      summary: Mark item as purchased
+      description: Update the lead status when an item is purchased
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              properties:
+                file:
+                  type: string
+                  format: binary
+                  description: Optional file attachment
+      responses:
+        '200':
+          description: Item marked as purchased successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Success'
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  /api/questionnaires/upload-documents:
+    post:
+      tags:
+        - Questionnaires
+      summary: Upload documents
+      description: Upload multiple documents including Aadhar, phone bill, phone images, and signature
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              properties:
+                adharFront:
+                  type: string
+                  format: binary
+                  description: Front side of Aadhar card
+                adharBack:
+                  type: string
+                  format: binary
+                  description: Back side of Aadhar card
+                phoneBill:
+                  type: string
+                  format: binary
+                  description: Phone bill document
+                phoneFront:
+                  type: string
+                  format: binary
+                  description: Front image of phone
+                phoneBack:
+                  type: string
+                  format: binary
+                  description: Back image of phone
+                phoneUp:
+                  type: string
+                  format: binary
+                  description: Top view of phone
+                phoneDown:
+                  type: string
+                  format: binary
+                  description: Bottom view of phone
+                phoneLeft:
+                  type: string
+                  format: binary
+                  description: Left side view of phone
+                phoneRight:
+                  type: string
+                  format: binary
+                  description: Right side view of phone
+                signature:
+                  type: string
+                  format: binary
+                  description: Customer signature
+      responses:
+        '200':
+          description: Documents uploaded successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Success'
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  /api/questionnaires/getSubmitedData:
+    post:
+      tags:
+        - Questionnaires
+      summary: Get submitted data
+      description: Retrieve submitted questionnaire data
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+      responses:
+        '200':
+          description: Submitted data retrieved successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Success'
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  /api/questionnaires/getDocuments:
+    get:
+      tags:
+        - Questionnaires
+      summary: Get documents
+      description: Retrieve uploaded documents for a questionnaire
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: Documents retrieved successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Success'
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  /api/questionnaires/questionnaireList:
+    get:
+      tags:
+        - Questionnaires
+      summary: Get questionnaire list
+      description: Retrieve list of questionnaires
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: Questionnaire list retrieved successfully
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  type: object
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  /api/questionnaires/edit:
+    put:
+      tags:
+        - Questionnaires
+      summary: Edit questionnaire
+      description: Update an existing questionnaire
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                _id:
+                  type: string
+                  example: 60d5ec49f1b2c72b8c8e4f1a
+                group:
+                  type: string
+                yes:
+                  type: string
+                no:
+                  type: string
+                quetion:
+                  type: string
+                default:
+                  type: string
+      responses:
+        '200':
+          description: Questionnaire updated successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Success'
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  /api/questionnaires/deleteById:
+    delete:
+      tags:
+        - Questionnaires
+      summary: Delete questionnaire
+      description: Delete a questionnaire by ID
+      security:
+        - bearerAuth: []
+      parameters:
+        - in: query
+          name: _id
+          required: true
+          schema:
+            type: string
+            example: 60d5ec49f1b2c72b8c8e4f1a
+          description: Questionnaire ID to delete
+      responses:
+        '200':
+          description: Questionnaire deleted successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Success'
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  /api/questionnaires/calculatePriceWatch:
+    post:
+      tags:
+        - Questionnaires
+      summary: Calculate smartwatch price
+      description: Calculate the price of a smartwatch based on questionnaire answers
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - QNA
+                - phoneNumber
+                - modelId
+              properties:
+                QNA:
+                  type: object
+                  description: Question and answer object for smartwatch condition
+                phoneNumber:
+                  type: string
+                  example: '9876543210'
+                modelId:
+                  type: string
+                  example: 60d5ec49f1b2c72b8c8e4f1a
+                storage:
+                  type: string
+                  example: 32GB
+                name:
+                  type: string
+                  example: John Doe
+                aadharNumber:
+                  type: string
+                  example: '123456789012'
+      responses:
+        '200':
+          description: Watch price calculated successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    type: object
+                    properties:
+                      id:
+                        type: string
+                      price:
+                        type: number
+                      grade:
+                        type: string
+                      uniqueCode:
+                        type: string
+                  message:
+                    type: string
+                    example: Price fetched successfully.
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  /api/questionnaires/customerDetail:
+    post:
+      tags:
+        - Questionnaires
+      summary: Submit customer details
+      description: Submit customer details for questionnaire (public endpoint)
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                name:
+                  type: string
+                  example: John Doe
+                phoneNumber:
+                  type: string
+                  example: '9876543210'
+                email:
+                  type: string
+                  format: email
+                  example: john@example.com
+      responses:
+        '200':
+          description: Customer details submitted successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Success'
+        '400':
+          description: Bad request
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'

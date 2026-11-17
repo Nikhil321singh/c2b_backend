@@ -1,0 +1,161 @@
+paths:
+  /api/payout-config/company:
+    get:
+      tags: [Payout Configuration]
+      summary: Get company buyback payout settings
+      description: >-
+        Returns the caller's company buyback payout settings (feature toggle,
+        device cooldown, customer sell limit). Super Admin may pass companyId to
+        target another company; Company Admin is scoped to their own company.
+      parameters:
+        - in: query
+          name: companyId
+          required: false
+          schema: { type: string }
+          description: Super Admin only; defaults to the caller's company.
+      responses:
+        '200':
+          description: Company payout configuration
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success: { type: boolean }
+                  data:
+                    $ref: '#/components/schemas/CompanyPayoutConfig'
+        '403': { description: Not authorised to manage payout configuration }
+        '404': { description: Company not found }
+    put:
+      tags: [Payout Configuration]
+      summary: Update company buyback payout settings
+      description: >-
+        Partial update: only the provided fields change; the rest are preserved.
+        customerSellLimitCount and customerSellLimitWindowDays must be set
+        together.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                companyId:
+                  type: string
+                  description: Super Admin only; defaults to the caller's company.
+                buybackPayoutSettings:
+                  $ref: '#/components/schemas/BuybackPayoutSettings'
+      responses:
+        '200':
+          description: Updated company payout configuration
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success: { type: boolean }
+                  data:
+                    $ref: '#/components/schemas/CompanyPayoutConfig'
+        '400': { description: Invalid configuration values }
+        '403': { description: Not authorised / cannot access another company }
+        '404': { description: Company not found }
+  /api/payout-config/stores/{storeId}:
+    get:
+      tags: [Payout Configuration]
+      summary: Get store payout settings
+      parameters:
+        - in: path
+          name: storeId
+          required: true
+          schema: { type: string }
+      responses:
+        '200':
+          description: Store payout configuration
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success: { type: boolean }
+                  data:
+                    $ref: '#/components/schemas/StorePayoutConfig'
+        '403': { description: Store outside the caller's company }
+        '404': { description: Store not found }
+    put:
+      tags: [Payout Configuration]
+      summary: Update store payout settings (mode, ceiling, approval, link expiry)
+      description: 'Partial update; provided fields override, the rest are preserved.'
+      parameters:
+        - in: path
+          name: storeId
+          required: true
+          schema: { type: string }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                payoutSettings:
+                  $ref: '#/components/schemas/StorePayoutSettings'
+      responses:
+        '200':
+          description: Updated store payout configuration
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success: { type: boolean }
+                  data:
+                    $ref: '#/components/schemas/StorePayoutConfig'
+        '400': { description: Invalid payout configuration values }
+        '403': { description: Store outside the caller's company }
+        '404': { description: Store not found }
+
+components:
+  schemas:
+    BuybackPayoutSettings:
+      type: object
+      properties:
+        enabled: { type: boolean, example: true }
+        deviceCooldownDays: { type: integer, minimum: 0, example: 30 }
+        customerSellLimitCount: { type: integer, minimum: 0, example: 3 }
+        customerSellLimitWindowDays: { type: integer, minimum: 0, example: 90 }
+    StorePayoutSettings:
+      type: object
+      properties:
+        enabled: { type: boolean, example: true }
+        mode:
+          type: string
+          enum: [MANUAL, HSBC_UPI, HSBC_IMPS, HSBC_NEFT]
+          example: HSBC_IMPS
+        approvalEnabled: { type: boolean, example: false }
+        approvalThreshold: { type: number, minimum: 0, example: 50000 }
+        payoutCeiling: { type: number, minimum: 0, example: 500000 }
+        customerLinkExpiryMinutes:
+          type: integer
+          minimum: 5
+          maximum: 1440
+          example: 30
+    CompanyPayoutConfig:
+      type: object
+      properties:
+        companyId: { type: string }
+        companyName: { type: string }
+        buybackPayoutSettings:
+          $ref: '#/components/schemas/BuybackPayoutSettings'
+    StorePayoutConfig:
+      type: object
+      properties:
+        storeId: { type: string }
+        storeName: { type: string }
+        payoutSettings:
+          $ref: '#/components/schemas/StorePayoutSettings'
+
+tags:
+  - name: Payout Configuration
+    description: >-
+      Company buyback settings and per-store payout settings (Super Admin +
+      Company Admin).

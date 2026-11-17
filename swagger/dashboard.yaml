@@ -1,0 +1,372 @@
+paths:
+  /api/user/Dashboard/order/created:
+    get:
+      tags:
+        - Dashboard
+      summary: Get created orders count
+      description: Retrieve count of orders created by the user (prospects not yet sold)
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: Order count retrieved successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  count:
+                    type: number
+                    example: 15
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  /api/user/Dashboard/order/saled:
+    get:
+      tags:
+        - Dashboard
+      summary: Get sold orders
+      description: Retrieve list of sold orders with optional filters for time range, search, and device type
+      security:
+        - bearerAuth: []
+      parameters:
+        - in: query
+          name: time
+          schema:
+            type: string
+            enum: [today, week, month, year]
+            example: week
+          description: Time range filter
+        - in: query
+          name: search
+          schema:
+            type: string
+            example: iPhone
+          description: Search by model name or unique code
+        - in: query
+          name: fromdate
+          schema:
+            type: string
+            format: date
+            example: 2024-06-01
+          description: Start date for custom date range
+        - in: query
+          name: todate
+          schema:
+            type: string
+            format: date
+            example: 2024-06-30
+          description: End date for custom date range
+        - in: query
+          name: datareq
+          schema:
+            type: string
+            example: CTG1
+          description: Device type filter
+      responses:
+        '200':
+          description: Sold orders retrieved successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  count:
+                    type: number
+                    example: 25
+                  Leads:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        _id:
+                          type: string
+                          example: 60d5ec49f1b2c72b8c8e4f1a
+                        updatedAt:
+                          type: string
+                          format: date-time
+                        user:
+                          type: object
+                          properties:
+                            name:
+                              type: string
+                              example: John Doe
+                        doc:
+                          type: object
+                          properties:
+                            IMEI:
+                              type: string
+                              example: 123456789012345
+                        store:
+                          type: object
+                        name:
+                          type: string
+                        emailId:
+                          type: string
+                        phoneNumber:
+                          type: string
+                        aadharNumber:
+                          type: string
+                        uniqueCode:
+                          type: string
+                          example: GRESTKOL001
+                        storage:
+                          type: string
+                        ram:
+                          type: string
+                        price:
+                          type: number
+                        model:
+                          type: object
+                        category:
+                          type: string
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  /api/user/Dashboard/add/PhoneView:
+    post:
+      tags:
+        - Dashboard
+      summary: Add viewed phone
+      description: Track when a user views a phone model
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - modelId
+              properties:
+                modelId:
+                  type: string
+                  example: 60d5ec49f1b2c72b8c8e4f1a
+                  description: Model ID of the phone being viewed
+      responses:
+        '200':
+          description: View tracked successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: Data saved successfully
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  /api/user/Dashboard/getPhoneView:
+    get:
+      tags:
+        - Dashboard
+      summary: Get viewed phones
+      description: Retrieve list of phones viewed by the user
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: Viewed phones retrieved successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  countQuickview:
+                    type: number
+                    example: 10
+                  viewModelsData:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        _id:
+                          type: string
+                          example: 60d5ec49f1b2c72b8c8e4f1a
+                        name:
+                          type: string
+                          example: iPhone 15 Pro
+                        brandId:
+                          type: string
+                        type:
+                          type: string
+                          example: CTG1
+                        series:
+                          type: string
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  /api/user/Dashboard/get/top/sellingModels:
+    get:
+      tags:
+        - Dashboard
+      summary: Get top selling models
+      description: Retrieve top 7 selling phone models for the user
+      security:
+        - bearerAuth: []
+      parameters:
+        - in: query
+          name: deviceType
+          schema:
+            type: string
+            default: CTG1
+            example: CTG1
+          description: Device type filter
+      responses:
+        '200':
+          description: Top selling models retrieved successfully
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  type: object
+                  properties:
+                    _id:
+                      type: string
+                      example: 60d5ec49f1b2c72b8c8e4f1a
+                    name:
+                      type: string
+                      example: iPhone 15 Pro
+                    brandId:
+                      type: string
+                    type:
+                      type: string
+                      example: CTG1
+                    series:
+                      type: string
+                      example: iPhone 15 Series
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  /api/user/Dashboard/search/phones:
+    post:
+      tags:
+        - Dashboard
+      summary: Search phones
+      description: Search for phone models by name and device type
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - name
+              properties:
+                name:
+                  type: string
+                  example: iPhone 15
+                  description: Phone model name to search
+                deviceType:
+                  type: string
+                  example: CTG1
+                  description: Device type filter
+      responses:
+        '200':
+          description: Search results
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  type: object
+                  properties:
+                    _id:
+                      type: string
+                      example: 60d5ec49f1b2c72b8c8e4f1a
+                    name:
+                      type: string
+                      example: iPhone 15 Pro
+                    brandId:
+                      type: string
+                    type:
+                      type: string
+                      example: CTG1
+                    series:
+                      type: string
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '404':
+          description: No phones found
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: No phones found
+
+  /api/user/Dashboard/get/top/sellingforadmin:
+    get:
+      tags:
+        - Dashboard
+      summary: Get top selling models for admin
+      description: Retrieve top 10 selling phone models across all users (admin view)
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: Top selling models retrieved successfully
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  type: object
+                  properties:
+                    _id:
+                      type: string
+                      example: 60d5ec49f1b2c72b8c8e4f1a
+                    name:
+                      type: string
+                      example: iPhone 15 Pro
+                    brandId:
+                      type: string
+                    type:
+                      type: string
+                      example: CTG1
+                    series:
+                      type: string
+                      example: iPhone 15 Series
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'

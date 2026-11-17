@@ -1,0 +1,66 @@
+paths:
+  /api/hsbc-payments/status-notification:
+    post:
+      tags: [HSBC Payments]
+      summary: HSBC Payment Status Notification (settlement webhook)
+      description: >-
+        Callback endpoint HSBC POSTs a Payment Status Notification to. The `event`
+        is a PGP-encrypted, Base64-encoded PAIN002 status message. The handler
+        authenticates the caller (clientId/secret headers; fail-closed in
+        production), decrypts and requires a verified PGP signature, then settles
+        the matching payout (ACSC -> SUCCESS + receipt, RJCT -> FAILED). No JWT.
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                srcSysId: { type: string }
+                subscriptionId: { type: string }
+                custRelId: { type: string }
+                trackId: { type: string }
+                eventCat: { type: string, example: PaymentStatusNotification }
+                eventId: { type: string }
+                eventFrmt: { type: string, example: PAIN002 }
+                event:
+                  type: string
+                  description: PGP-encrypted, Base64-encoded PAIN002 payload.
+      responses:
+        '200':
+          description: Event acknowledged (processed or benignly ignored)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/NotificationAck'
+        '400':
+          description: >-
+            Unauthorised caller or unverified PGP signature (event rejected).
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/NotificationAck'
+        '500':
+          description: Processing error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/NotificationAck'
+
+components:
+  schemas:
+    NotificationAck:
+      type: object
+      properties:
+        subscriptionId: { type: string }
+        custRelId: { type: string }
+        eventCat: { type: string }
+        eventId: { type: string }
+        eventFrmt: { type: string }
+        statusCode: { type: string, enum: [Success, RJCT], example: Success }
+        statusDesc: { type: string }
+
+tags:
+  - name: HSBC Payments
+    description: HSBC Treasury Payment Initiation callbacks (settlement webhook).

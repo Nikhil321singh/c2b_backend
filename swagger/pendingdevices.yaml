@@ -1,0 +1,397 @@
+paths:
+  /api/pendingDevices/all:
+    get:
+      tags:
+        - Pending Devices
+      summary: Get all pending devices
+      description: Retrieve all devices that are sold but not yet completed, with optional store/region filters for Super Admin
+      security:
+        - bearerAuth: []
+      parameters:
+        - in: query
+          name: region
+          schema:
+            type: string
+            example: North
+          description: Filter by region (Super Admin only)
+        - in: query
+          name: storeName
+          schema:
+            type: string
+            example: Delhi Store
+          description: Filter by store name (Super Admin only)
+      responses:
+        '200':
+          description: List of pending devices with total price and count
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        totalPrices:
+                          type: number
+                          example: 50000
+                        count:
+                          type: number
+                          example: 10
+                        documents:
+                          type: array
+                          items:
+                            type: object
+                            properties:
+                              _id:
+                                type: string
+                                example: 60d5ec49f1b2c72b8c8e4f1a
+                              is_selled:
+                                type: boolean
+                                example: true
+                              status:
+                                type: string
+                                example: Pending Approval
+                              modelId:
+                                type: string
+                                example: 60d5ec49f1b2c72b8c8e4f1b
+                              storage:
+                                type: string
+                                example: 128GB
+                              price:
+                                type: number
+                                example: 5000
+                              modelName:
+                                type: string
+                                example: iPhone 15 Pro
+                              ramConfig:
+                                type: string
+                                example: 8GB
+                              location:
+                                type: string
+                                example: North
+                              imei:
+                                type: string
+                                example: 123456789012345
+                              reason:
+                                type: string
+                              category:
+                                type: string
+                                example: Smartphone
+                              storeDetails:
+                                type: object
+                                properties:
+                                  storeId:
+                                    type: string
+                                  storeName:
+                                    type: string
+                                  region:
+                                    type: string
+                                  address:
+                                    type: string
+                                  phone:
+                                    type: string
+                              createdAt:
+                                type: string
+                                format: date-time
+                              updatedAt:
+                                type: string
+                                format: date-time
+                  message:
+                    type: string
+                    example: Successfully Sent Devices
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '403':
+          description: Forbidden
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  msg:
+                    type: string
+                    example: Forbidden
+
+  /api/pendingDevices/search:
+    get:
+      tags:
+        - Pending Devices
+      summary: Search pending devices
+      description: Search devices by ID, model name, IMEI, date, or status
+      security:
+        - bearerAuth: []
+      parameters:
+        - in: query
+          name: rid
+          schema:
+            type: string
+            example: 60d5ec49
+          description: Search by device ID, model name, or IMEI
+        - in: query
+          name: date
+          schema:
+            type: string
+            example: 15/06/2024
+          description: Search by creation date (format dd/mm/yyyy)
+        - in: query
+          name: status
+          schema:
+            type: string
+            example: Pending
+          description: Filter by status
+        - in: query
+          name: region
+          schema:
+            type: string
+            example: North
+          description: Filter by region (Super Admin only)
+        - in: query
+          name: storeName
+          schema:
+            type: string
+            example: Delhi Store
+          description: Filter by store name (Super Admin only)
+      responses:
+        '200':
+          description: Search results
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    type: array
+                    items:
+                      type: object
+                  message:
+                    type: string
+                    example: Successfully Searched Devices
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '403':
+          description: Forbidden
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  msg:
+                    type: string
+                    example: Forbidden
+
+  /api/pendingDevices/update:
+    post:
+      tags:
+        - Pending Devices
+      summary: Update device status
+      description: Update the status of one or more devices
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - deviceIDs
+                - newStatus
+              properties:
+                deviceIDs:
+                  type: array
+                  items:
+                    type: string
+                  example: ["60d5ec49f1b2c72b8c8e4f1a", "60d5ec49f1b2c72b8c8e4f1b"]
+                  description: Array of device IDs to update
+                newStatus:
+                  type: string
+                  example: Approved
+                  description: New status for the devices
+                reason:
+                  type: string
+                  example: Quality check passed
+                  description: Reason for status update
+      responses:
+        '200':
+          description: Status updated successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    type: object
+                    properties:
+                      acknowledged:
+                        type: boolean
+                        example: true
+                      matchedCount:
+                        type: number
+                        example: 2
+                      modifiedCount:
+                        type: number
+                        example: 2
+                  message:
+                    type: string
+                    example: Successfully updated devices status
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  /api/pendingDevices/updatereq:
+    post:
+      tags:
+        - Pending Devices
+      summary: Create outstanding lot
+      description: Create a new outstanding lot and update device statuses
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - deviceIDs
+                - newStatus
+              properties:
+                deviceIDs:
+                  type: array
+                  items:
+                    type: string
+                  example: ["60d5ec49f1b2c72b8c8e4f1a", "60d5ec49f1b2c72b8c8e4f1b"]
+                  description: Array of lead IDs to include in the lot
+                newStatus:
+                  type: string
+                  example: Pickup Requested
+                  description: New status for the devices
+      responses:
+        '200':
+          description: Lot created successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    type: object
+                    properties:
+                      _id:
+                        type: string
+                        example: 60d5ec49f1b2c72b8c8e4f1a
+                      status:
+                        type: string
+                        example: Pending Payroll Approval
+                      request:
+                        type: string
+                        example: Pickup Requested
+                      totalDevice:
+                        type: number
+                        example: 2
+                      totalAmount:
+                        type: number
+                        example: 10000
+                      deviceList:
+                        type: array
+                        items:
+                          type: string
+                  msg:
+                    type: string
+                    example: Successfully created new lot
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  /api/pendingDevices/pickupreq:
+    post:
+      tags:
+        - Pending Devices
+      summary: Create pickup lot
+      description: Create a pickup lot and mark devices as completed
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - deviceIDs
+                - userid
+                - storeid
+              properties:
+                deviceIDs:
+                  type: array
+                  items:
+                    type: string
+                  example: ["60d5ec49f1b2c72b8c8e4f1a", "60d5ec49f1b2c72b8c8e4f1b"]
+                  description: Array of lead IDs to include in the pickup lot
+                userid:
+                  type: string
+                  example: 60d5ec49f1b2c72b8c8e4f1c
+                  description: User ID requesting pickup
+                storeid:
+                  type: string
+                  example: 60d5ec49f1b2c72b8c8e4f1d
+                  description: Store ID for pickup
+      responses:
+        '200':
+          description: Pickup lot created successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    type: object
+                    properties:
+                      _id:
+                        type: string
+                        example: 60d5ec49f1b2c72b8c8e4f1a
+                      status:
+                        type: string
+                        example: Pending Payment Confirmation
+                      totalDevice:
+                        type: number
+                        example: 2
+                      totalAmount:
+                        type: number
+                        example: 10000
+                      deviceList:
+                        type: array
+                        items:
+                          type: string
+                      userId:
+                        type: string
+                      storeId:
+                        type: string
+                      uniqueCode:
+                        type: string
+                        example: GRESTKOL001
+                  msg:
+                    type: string
+                    example: Successfully created new lot
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'

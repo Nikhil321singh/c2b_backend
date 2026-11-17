@@ -1,0 +1,160 @@
+paths:
+  /api/buyback-payouts/public/{token}:
+    get:
+      tags: [Buyback Payouts]
+      summary: Read customer payout-link details
+      security: []
+      parameters:
+        - in: path
+          name: token
+          required: true
+          schema: { type: string }
+      responses:
+        '200': { description: Payout details }
+        '404': { description: Invalid link }
+        '410': { description: Expired link }
+  /api/buyback-payouts/public/{token}/vpa:
+    post:
+      tags: [Buyback Payouts]
+      summary: Validate and save the customer's beneficiary VPA
+      security: []
+      parameters:
+        - in: path
+          name: token
+          required: true
+          schema: { type: string }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [vpa]
+              properties:
+                vpa: { type: string, example: customer@bank }
+      responses:
+        '200': { description: VPA validated }
+        '422': { description: VPA validation failed }
+  /api/buyback-payouts/public/{token}/bank:
+    post:
+      tags: [Buyback Payouts]
+      summary: Save the customer's beneficiary bank details (HSBC IMPS/NEFT)
+      description: >-
+        Used for bank-transfer payouts (provider HSBC_IMPS or HSBC_NEFT). Stores
+        the account number encrypted, keeps only a masked copy, and moves the
+        payout to READY_FOR_PAYMENT (or PENDING_APPROVAL when approval applies).
+      security: []
+      parameters:
+        - in: path
+          name: token
+          required: true
+          schema: { type: string }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [accountNumber, ifsc, accountName]
+              properties:
+                accountNumber: { type: string, example: '10000002' }
+                ifsc: { type: string, example: HDFC0000007 }
+                accountName: { type: string, example: Test Customer }
+      responses:
+        '200': { description: Bank details accepted; payout ready for payment }
+        '404': { description: Invalid or expired payout link }
+        '422': { description: Invalid bank details (account/IFSC) }
+  /api/buyback-payouts:
+    get:
+      tags: [Buyback Payouts]
+      summary: List payouts within the authenticated user's scope
+      parameters:
+        - in: query
+          name: status
+          schema: { type: string }
+        - in: query
+          name: storeId
+          schema: { type: string }
+        - in: query
+          name: page
+          schema: { type: integer, default: 1 }
+        - in: query
+          name: limit
+          schema: { type: integer, default: 20, maximum: 100 }
+      responses:
+        '200': { description: Payout list }
+  /api/buyback-payouts/{id}:
+    get:
+      tags: [Buyback Payouts]
+      summary: Get an authenticated payout
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema: { type: string }
+      responses:
+        '200': { description: Payout details }
+        '403': { description: Outside user scope }
+  /api/buyback-payouts/{id}/approval:
+    post:
+      tags: [Buyback Payouts]
+      summary: Approve or reject a threshold-controlled payout as an eligible scoped approver
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema: { type: string }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [approved]
+              properties:
+                approved: { type: boolean }
+                remarks: { type: string, maxLength: 250 }
+      responses:
+        '200': { description: Approval recorded }
+        '403': { description: Approval permission required }
+  /api/buyback-payouts/{id}/pay:
+    post:
+      tags: [Buyback Payouts]
+      summary: Initiate the HSBC merchant-to-customer UPI payout
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema: { type: string }
+      responses:
+        '200': { description: HSBC response recorded }
+        '409': { description: Payout is not ready or is already processing }
+  /api/buyback-payouts/{id}/status:
+    post:
+      tags: [Buyback Payouts]
+      summary: Enquire and reconcile payout status with HSBC
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema: { type: string }
+      responses:
+        '200': { description: Status reconciled }
+  /api/buyback-payouts/{id}/resend-link:
+    post:
+      tags: [Buyback Payouts]
+      summary: Rotate and resend an unsubmitted, expired or failed-payout customer link
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema: { type: string }
+      responses:
+        '200': { description: New link generated and configured notification attempted }
+        '409': { description: Link already delivered or payout state is not eligible for a new link }
+  /api/buyback-payouts/configuration-status:
+    get:
+      tags: [Buyback Payouts]
+      summary: Check HSBC integration readiness without exposing credentials
+      responses:
+        '200': { description: Safe configuration status }

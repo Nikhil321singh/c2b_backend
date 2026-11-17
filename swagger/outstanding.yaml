@@ -1,0 +1,300 @@
+paths:
+  /api/outstanding/all:
+    get:
+      tags:
+        - Outstanding
+      summary: Get all outstanding lots
+      description: Retrieve all device lots except "Request Forwarded" lots, with optional store/region filters for Super Admin
+      security:
+        - bearerAuth: []
+      parameters:
+        - in: query
+          name: region
+          schema:
+            type: string
+            example: North
+          description: Filter by region (Super Admin only)
+        - in: query
+          name: storeName
+          schema:
+            type: string
+            example: Delhi Store
+          description: Filter by store name (Super Admin only)
+        - in: query
+          name: qregion
+          schema:
+            type: string
+            example: South
+          description: Alternative region filter parameter (Super Admin only)
+        - in: query
+          name: qstoreName
+          schema:
+            type: string
+            example: Mumbai Store
+          description: Alternative store name filter parameter (Super Admin only)
+      responses:
+        '200':
+          description: List of outstanding lots
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        _id:
+                          type: string
+                          example: 60d5ec49f1b2c72b8c8e4f1a
+                        deviceList:
+                          type: array
+                          items:
+                            type: string
+                          example: ["60d5ec49f1b2c72b8c8e4f1b", "60d5ec49f1b2c72b8c8e4f1c"]
+                        status:
+                          type: string
+                          example: Pending
+                        request:
+                          type: string
+                          example: Pickup Requested
+                        createdAt:
+                          type: string
+                          format: date-time
+                        updatedAt:
+                          type: string
+                          format: date-time
+                  message:
+                    type: string
+                    example: Successfully sent Lots
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '403':
+          description: Forbidden
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  msg:
+                    type: string
+                    example: Forbidden
+
+  /api/outstanding/search:
+    get:
+      tags:
+        - Outstanding
+      summary: Search outstanding lots
+      description: Search lots by reference ID or creation date with optional store/region filters
+      security:
+        - bearerAuth: []
+      parameters:
+        - in: query
+          name: rid
+          schema:
+            type: string
+            example: 60d5ec49
+          description: Search by reference ID (lot ID)
+        - in: query
+          name: date
+          schema:
+            type: string
+            example: 15/06/2024
+          description: Search by creation date (format dd/mm/yyyy)
+        - in: query
+          name: region
+          schema:
+            type: string
+            example: North
+          description: Filter by region (Super Admin only)
+        - in: query
+          name: storeName
+          schema:
+            type: string
+            example: Delhi Store
+          description: Filter by store name (Super Admin only)
+        - in: query
+          name: qregion
+          schema:
+            type: string
+            example: South
+          description: Alternative region filter parameter (Super Admin only)
+        - in: query
+          name: qstoreName
+          schema:
+            type: string
+            example: Mumbai Store
+          description: Alternative store name filter parameter (Super Admin only)
+      responses:
+        '200':
+          description: Search results
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    type: array
+                    items:
+                      type: object
+                  msg:
+                    type: string
+                    example: Successfully searched data
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '403':
+          description: Forbidden
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  msg:
+                    type: string
+                    example: Forbidden
+
+  /api/outstanding/update:
+    post:
+      tags:
+        - Outstanding
+      summary: Update lot status
+      description: Update the status of one or more lots using lot IDs
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - refIDs
+                - newStatus
+              properties:
+                refIDs:
+                  type: array
+                  items:
+                    type: string
+                  example: ["60d5ec49f1b2c72b8c8e4f1a", "60d5ec49f1b2c72b8c8e4f1b"]
+                  description: Array of lot IDs to update
+                newStatus:
+                  type: string
+                  example: Processing
+                  description: New status to set for the lots
+      responses:
+        '200':
+          description: Status updated successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    type: object
+                    properties:
+                      acknowledged:
+                        type: boolean
+                        example: true
+                      matchedCount:
+                        type: number
+                        example: 2
+                      modifiedCount:
+                        type: number
+                        example: 2
+                  message:
+                    type: string
+                    example: Successfully updated lots status
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  /api/outstanding/forwardreq:
+    post:
+      tags:
+        - Outstanding
+      summary: Forward request
+      description: Forward a request by changing lot status to "Request Forwarded" and updating device statuses
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - refIDs
+              properties:
+                refIDs:
+                  type: string
+                  example: 60d5ec49f1b2c72b8c8e4f1a
+                  description: Lot ID to forward
+      responses:
+        '200':
+          description: Request forwarded successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    type: object
+                  message:
+                    type: string
+                    example: Successfully Forwarded Request
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  /api/outstanding/devices/{rid}:
+    get:
+      tags:
+        - Outstanding
+      summary: Get devices in lot
+      description: Retrieve all devices in a specific lot using lot ID
+      security:
+        - bearerAuth: []
+      parameters:
+        - in: path
+          name: rid
+          required: true
+          schema:
+            type: string
+            example: 60d5ec49f1b2c72b8c8e4f1a
+          description: Lot reference ID
+      responses:
+        '200':
+          description: List of devices in the lot
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    type: array
+                    items:
+                      type: object
+                  message:
+                    type: string
+                    example: Successfully sended devicesList
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'

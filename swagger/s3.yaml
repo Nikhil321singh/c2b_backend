@@ -1,0 +1,54 @@
+paths:
+  /api/s3/get-presigned-url:
+    get:
+      tags:
+        - S3
+      summary: Get presigned URL
+      description: Generate a presigned URL for uploading files directly to S3 (images and PDFs only)
+      parameters:
+        - in: query
+          name: fileName
+          required: true
+          schema:
+            type: string
+            example: document.pdf
+          description: Name of the file to upload
+        - in: query
+          name: fileType
+          required: true
+          schema:
+            type: string
+            example: application/pdf
+          description: MIME type of the file (allowed types - image/jpeg, image/jpg, image/png, image/gif, image/webp, application/pdf)
+      responses:
+        '200':
+          description: Presigned URL generated successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  url:
+                    type: string
+                    example: https://bucket.s3.region.amazonaws.com/folder/document.pdf?X-Amz-Algorithm=...
+                    description: Presigned URL for direct S3 upload
+        '400':
+          description: Invalid request or unsupported file type
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                    example: Invalid file type. Only images (JPEG, PNG, GIF, WebP) and PDFs are allowed.
+        '500':
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                    example: Internal Server Error

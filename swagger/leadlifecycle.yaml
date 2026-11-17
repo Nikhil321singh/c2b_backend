@@ -1,0 +1,500 @@
+paths:
+  /api/leadSet/quickQoute:
+    post:
+      tags:
+        - Lead Lifecycle
+      summary: Create quick quote
+      description: Create a quick quote for a lead
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - lead_id
+                - phoneNumber
+                - name
+                - emailId
+                - reason
+              properties:
+                lead_id:
+                  type: string
+                  example: 60d5ec49f1b2c72b8c8e4f1a
+                  description: ID of the lead
+                phoneNumber:
+                  type: string
+                  example: '9876543210'
+                  description: Customer phone number
+                name:
+                  type: string
+                  example: John Doe
+                  description: Customer name
+                emailId:
+                  type: string
+                  format: email
+                  example: john@example.com
+                  description: Customer email ID
+                reason:
+                  type: string
+                  example: Customer requested quote
+                  description: Reason for creating quote
+                eventType:
+                  type: string
+                  example: quoteCreated
+                  default: quoteCreated
+                  description: Type of event (defaults to quoteCreated)
+                bonusPrice:
+                  type: number
+                  example: 500
+                  description: Bonus price amount (only for orderCreated events)
+      responses:
+        '200':
+          description: Quote created successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  code:
+                    type: integer
+                    example: 200
+                  message:
+                    type: string
+                    example: Successfully inserted on quoteCreated
+        '400':
+          description: Bad request - all fields are required
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  code:
+                    type: integer
+                    example: 400
+                  message:
+                    type: string
+                    example: All fields are required
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '404':
+          description: Lead not found
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  code:
+                    type: integer
+                    example: 404
+                  message:
+                    type: string
+                    example: Lead not found
+        '500':
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  code:
+                    type: integer
+                    example: 500
+                  message:
+                    type: string
+                    example: Internal Server Error
+                  error:
+                    type: string
+
+  /api/leadSet/orderCreated:
+    post:
+      tags:
+        - Lead Lifecycle
+      summary: Create order
+      description: Create an order entry for a lead
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - lead_id
+                - phoneNumber
+                - name
+                - emailId
+                - reason
+              properties:
+                lead_id:
+                  type: string
+                  example: 60d5ec49f1b2c72b8c8e4f1a
+                  description: ID of the lead
+                phoneNumber:
+                  type: string
+                  example: '9876543210'
+                  description: Customer phone number
+                name:
+                  type: string
+                  example: John Doe
+                  description: Customer name
+                emailId:
+                  type: string
+                  format: email
+                  example: john@example.com
+                  description: Customer email ID
+                reason:
+                  type: string
+                  example: Order confirmed by customer
+                  description: Reason for creating order
+                bonusPrice:
+                  type: number
+                  example: 500
+                  description: Bonus price amount
+      responses:
+        '200':
+          description: Order created successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  code:
+                    type: integer
+                    example: 200
+                  message:
+                    type: string
+                    example: Successfully inserted on orderCreated
+        '400':
+          description: Bad request - all fields are required
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  code:
+                    type: integer
+                    example: 400
+                  message:
+                    type: string
+                    example: All fields are required
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '404':
+          description: Lead not found
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  code:
+                    type: integer
+                    example: 404
+                  message:
+                    type: string
+                    example: Lead not found
+        '500':
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  code:
+                    type: integer
+                    example: 500
+                  message:
+                    type: string
+                    example: Internal Server Error
+                  error:
+                    type: string
+
+  /api/leadSet/getCount:
+    get:
+      tags:
+        - Lead Lifecycle
+      summary: Get counts and data
+      description: Retrieve counts and details of orders and quotes with optional filters
+      security:
+        - bearerAuth: []
+      parameters:
+        - in: query
+          name: time
+          schema:
+            type: string
+            example: today
+          description: Time range filter (today, week, month, etc.)
+        - in: query
+          name: fromdate
+          schema:
+            type: string
+            format: date
+            example: '2024-01-01'
+          description: Start date for custom date range
+        - in: query
+          name: todate
+          schema:
+            type: string
+            format: date
+            example: '2024-01-31'
+          description: End date for custom date range
+        - in: query
+          name: search
+          schema:
+            type: string
+            example: iPhone
+          description: Search term for model name or unique code
+        - in: query
+          name: datareq
+          schema:
+            type: string
+            example: CTG1
+          description: Device type filter
+      responses:
+        '200':
+          description: Counts retrieved successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  code:
+                    type: integer
+                    example: 200
+                  data:
+                    type: object
+                    properties:
+                      orderData:
+                        type: object
+                        properties:
+                          count:
+                            type: integer
+                            example: 15
+                          data:
+                            type: array
+                            items:
+                              type: object
+                      quoteData:
+                        type: object
+                        properties:
+                          count:
+                            type: integer
+                            example: 25
+                          data:
+                            type: array
+                            items:
+                              type: object
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '500':
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  code:
+                    type: integer
+                    example: 500
+                  message:
+                    type: string
+                    example: Internal Server Error
+                  error:
+                    type: string
+
+  /api/leadSet/delete/{id}:
+    delete:
+      tags:
+        - Lead Lifecycle
+      summary: Delete lead lifecycle entry
+      description: Delete a lead lifecycle entry and associated lead data
+      security:
+        - bearerAuth: []
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: string
+            example: 60d5ec49f1b2c72b8c8e4f1a
+          description: ID of the lead lifecycle entry to delete
+      responses:
+        '200':
+          description: Lead deleted successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: Lead and its lifecycle data have been deleted successfully.
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '404':
+          description: Lead lifecycle entry not found
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: No leadLifecycle found with this id.
+        '500':
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+
+  /api/leadSet/uploadimage:
+    post:
+      tags:
+        - Lead Lifecycle
+      summary: Upload device images
+      description: Upload images of device (front, back, front-up, front-down views)
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              required:
+                - modelId
+              properties:
+                modelId:
+                  type: string
+                  example: 60d5ec49f1b2c72b8c8e4f1a
+                  description: ID of the model to upload images for
+                phoneFront:
+                  type: string
+                  format: binary
+                  description: Front view image of the phone
+                phoneBack:
+                  type: string
+                  format: binary
+                  description: Back view image of the phone
+                phoneFrontUp:
+                  type: string
+                  format: binary
+                  description: Front upper view image of the phone
+                phoneFrontDown:
+                  type: string
+                  format: binary
+                  description: Front lower view image of the phone
+      responses:
+        '200':
+          description: Images uploaded successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: Images uploaded and document updated successfully!
+                  data:
+                    type: object
+        '400':
+          description: Bad request - model not found
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: No document found with the given modelId.
+        '500':
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: An error occurred while uploading images and updating the document.
+                  error:
+                    type: string
+
+  /api/leadSet/bulkUploadImage:
+    post:
+      tags:
+        - Lead Lifecycle
+      summary: Bulk upload device images
+      description: Bulk upload images for multiple devices from a directory
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: Bulk upload completed
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: Images uploaded and document updated successfully!
+                  data:
+                    type: object
+                    properties:
+                      totaluploaded:
+                        type: integer
+                        example: 50
+                      duplicate:
+                        type: array
+                        items:
+                          type: string
+                      notfound:
+                        type: array
+                        items:
+                          type: string
+                      totaldup:
+                        type: integer
+                        example: 0
+                      totnf:
+                        type: integer
+                        example: 5
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '500':
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: An error occurred while uploading images and updating the document.
+                  error:
+                    type: string
