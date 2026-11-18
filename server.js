@@ -78,6 +78,7 @@ server.use((req, res, next) => {
     'https://www.grest.in',
     'http://localhost:3000',
     'http://localhost:4200',
+    'https://c2b-test-six.vercel.app',
   ]
 
   // Check if origin is allowed
@@ -123,6 +124,7 @@ const corsOptions = {
       'https://www.grest.in',
       'http://localhost:3000',
       'http://localhost:4200',
+      'https://c2b-test-six.vercel.app',
     ]
 
     const isAllowed = allowedOrigins.some(
