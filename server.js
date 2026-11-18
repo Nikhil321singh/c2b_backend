@@ -511,7 +511,7 @@ const sendReport = async (req, res) => {
 if (process.env.ENVIRONMENT !== 'lambda') {
   const PORT = process.env.PORT || 3000
 
-  server.listen(PORT, () => {
+  server.listen(PORT, '0.0.0.0', () => {
     safeLog.info(`Server running on port: ${PORT}`)
   })
 }

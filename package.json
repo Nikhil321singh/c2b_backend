@@ -26,6 +26,7 @@
     "aws-sdk": "^2.1517.0",
     "axios": "^1.13.6",
     "bcryptjs": "^2.4.3",
+    "body-parser": "^1.20.2",
     "cors": "^2.8.5",
     "csv-parser": "^3.2.0",
     "csvtojson": "^2.0.10",
