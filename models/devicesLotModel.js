@@ -48,15 +48,33 @@ const devicesLotSchema = new mongoose.Schema(
     remarks: {
       type: String,
     },
+    // Where the lot came from. MANUAL: raised from the store / pickup flow
+    // (older lots have no value and count as MANUAL). PAYOUT: the customer
+    // was already paid through HSBC and the lead was sent to logistics from
+    // Customer Payouts.
+    source: {
+      type: String,
+      enum: ["MANUAL", "PAYOUT"],
+    },
+    buybackPayoutId: {
+      type: mongoose.Types.ObjectId,
+      ref: "buybackPayout",
+    },
+    // Store-payment fields only apply to store-raised lots; payout lots are
+    // already settled with the customer and must not enter that workflow.
     paymentMode: {
       type: String,
       enum: ["COMPANY_ACCOUNTS", "MANAGER_FUNDS", "PREPAID_DEFERRED"],
-      default: "COMPANY_ACCOUNTS",
+      default: function () {
+        return this.source === "PAYOUT" ? undefined : "COMPANY_ACCOUNTS";
+      },
     },
     paymentStatus: {
       type: String,
       enum: ["PAYMENT_REQUESTED", "FLAGGED", "PROCESSING", "PAYMENT_DONE"],
-      default: "PAYMENT_REQUESTED",
+      default: function () {
+        return this.source === "PAYOUT" ? undefined : "PAYMENT_REQUESTED";
+      },
       index: true,
     },
     requestedAt: { type: Date },
@@ -105,6 +123,12 @@ devicesLotSchema.index({ uniqueCode: 1 });
 devicesLotSchema.index({ userId: 1 });
 devicesLotSchema.index({ createdAt: -1 });
 devicesLotSchema.index({ companyId: 1, paymentStatus: 1, createdAt: -1 });
+// One logistics lot per customer payout, enforced by the database.
+devicesLotSchema.index(
+  { buybackPayoutId: 1 },
+  { unique: true, partialFilterExpression: { buybackPayoutId: { $exists: true } } }
+);
+devicesLotSchema.index({ source: 1, status: 1 });
 
 const devicesLotModel = mongoose.model("devicesLot", devicesLotSchema);
 

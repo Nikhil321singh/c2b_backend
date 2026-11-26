@@ -290,8 +290,12 @@ async function performDataDeletion(userId) {
     const leadsResult = await leadsModel.deleteMany({ userId })
     summary.leads = leadsResult.deletedCount || 0
 
-    // Delete device lots
-    const pickupResult = await devicesLotModel.deleteMany({ userId })
+    // Delete device lots. Lots sent from Customer Payouts belong to the paid
+    // payout, not to the user who clicked "Send to Logistics", so they stay.
+    const pickupResult = await devicesLotModel.deleteMany({
+      userId,
+      source: { $ne: 'PAYOUT' },
+    })
     summary.deviceLot = pickupResult.deletedCount || 0
 
     // Delete quote logs

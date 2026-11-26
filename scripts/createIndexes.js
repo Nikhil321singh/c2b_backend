@@ -125,6 +125,16 @@ async function createIndexes() {
         key: { companyId: 1, paymentStatus: 1, createdAt: -1 },
         name: 'companyId_paymentStatus_createdAt',
       },
+      // One logistics lot per customer payout.
+      {
+        key: { buybackPayoutId: 1 },
+        name: 'buybackPayoutId_unique',
+        options: {
+          unique: true,
+          partialFilterExpression: { buybackPayoutId: { $exists: true } },
+        },
+      },
+      { key: { source: 1, status: 1 }, name: 'source_status' },
     ]
 
     // Create indexes for all collections

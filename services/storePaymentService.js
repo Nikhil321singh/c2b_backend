@@ -349,7 +349,9 @@ export const createStorePaymentRequest = async ({ actorId, leadIds }) => {
 }
 
 const buildListScope = (actor, query) => {
-  const filter = {}
+  // Lots handed to logistics from Customer Payouts are already settled with
+  // the customer; they are not store payment requests.
+  const filter = { source: { $ne: 'PAYOUT' } }
   if (actor.role !== ROLES.SUPER_ADMIN) {
     filter.companyId = actor.companyId
   }

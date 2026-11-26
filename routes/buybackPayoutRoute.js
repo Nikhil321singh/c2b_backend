@@ -55,5 +55,10 @@ buybackPayoutRoute
     verifyToken,
     buybackPayoutController.refreshStatus,
   )
+  .post(
+    '/:id/send-to-logistics',
+    verifyToken,
+    buybackPayoutController.sendToLogistics,
+  )
 
 export default buybackPayoutRoute
