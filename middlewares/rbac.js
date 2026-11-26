@@ -5,10 +5,9 @@ import { safeLog } from '../utils/piiMasking.js'
 export const ROLES = {
   SUPER_ADMIN: 'Super Admin',
   COMPANY_ADMIN: 'Company Admin',
+  LOGISTICS_ADMIN: 'Logistics Admin',
   STORE_ADMIN: 'Store Admin',
   ACCOUNTS_USER: 'Accounts User',
-  WAREHOUSE_USER: 'Warehouse User',
-  LOGISTIC_USER: 'Logistic User',
   MANAGER: 'Manager',
   ADMIN_MANAGER: 'Admin Manager',
   TECHNICIAN: 'Technician',
@@ -409,9 +408,7 @@ const canAssignRole = (
 const ROLE_HIERARCHY = [
   ROLES.SALES,
   ROLES.TECHNICIAN,
-  ROLES.LOGISTIC_USER,
   ROLES.STORE_ADMIN,
-  ROLES.WAREHOUSE_USER,
   ROLES.ACCOUNTS_USER,
   ROLES.MANAGER,
   ROLES.ADMIN_MANAGER,

@@ -30,6 +30,13 @@ const leadsSchema = new Schema(
       type: String,
       required: true,
     },
+    // Populated only when the Aadhaar number was entered manually (Aadhaar
+    // verification off for the company, or DigiLocker verification failed)
+    // instead of coming from a real DigiLocker verification, so there is an
+    // audit trail explaining why it wasn't auto-verified.
+    aadharVerificationReason: {
+      type: String,
+    },
     brandId: {
       type: Schema.Types.ObjectId,
       required: true,
@@ -135,58 +142,6 @@ const leadsSchema = new Schema(
       enum: ['', 'PAYMENT_REQUESTED', 'FLAGGED', 'PAYMENT_DONE'],
       default: '',
       index: true,
-    },
-    warehouseStatus: {
-      type: String,
-      enum: ['', 'IN_WAREHOUSE'],
-      default: '',
-      index: true,
-    },
-    logisticAgentId: {
-      type: Schema.Types.ObjectId,
-      ref: 'users',
-      index: true,
-    },
-    logisticAssignedBy: {
-      type: Schema.Types.ObjectId,
-      ref: 'users',
-    },
-    logisticAssignedAt: { type: Date },
-    deliveryStatus: {
-      type: String,
-      enum: [
-        '',
-        'UNASSIGNED',
-        'OUT_FOR_PICKUP',
-        'PICKUP_COMPLETE',
-        'CANCELLED',
-        'PUSHED_TO_LOGISTICS',
-        'DELIVERED',
-      ],
-      default: '',
-      index: true,
-    },
-    cancellation: {
-      reason: { type: String },
-      cancelledBy: { type: Schema.Types.ObjectId, ref: 'users' },
-      cancelledAt: { type: Date },
-      restoredBy: { type: Schema.Types.ObjectId, ref: 'users' },
-      restoredAt: { type: Date },
-    },
-    courier: {
-      provider: { type: String },
-      orderId: { type: String },
-      status: { type: String },
-      pushedAt: { type: Date },
-      lastAttemptAt: { type: Date },
-      lastError: { type: String },
-      attempts: { type: Number, default: 0 },
-      // Shipping label PDF (S3 URL) returned with the waybill, plus the
-      // courier's scheduled pickup date and latest tracking scan.
-      labelUrl: { type: String },
-      shipmentPickupDate: { type: String },
-      trackingStatus: { type: String },
-      trackedAt: { type: Date },
     },
     deviceIdentityHash: {
       type: String,

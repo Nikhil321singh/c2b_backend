@@ -85,7 +85,7 @@ paths:
   /api/store-payments/{id}/mark-paid:
     post:
       tags: [Store Payments]
-      summary: Mark the store payment paid and hand devices to Warehouse
+      summary: Mark the store payment paid
       parameters:
         - in: path
           name: id
@@ -101,6 +101,6 @@ paths:
                 paymentReceipt: { type: string, description: Receipt URL }
                 remarks: { type: string }
       responses:
-        '200': { description: Payment done and Warehouse handoff completed }
+        '200': { description: Payment done }
         '409': { description: Already paid or currently flagged }
 

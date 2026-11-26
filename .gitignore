@@ -11,6 +11,3 @@ package-lock.json
 
 # HSBC PGP/JOSE keys — never commit
 hsbc-keys/
-
-# Blue Dart test-order artefact (shipping label PDF)
-bluedart-*.pdf

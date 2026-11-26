@@ -32,7 +32,7 @@ const create = async (req, res) => {
       success: true,
       message:
         data.paymentMode === 'PREPAID_DEFERRED'
-          ? 'Devices transferred to Warehouse; no pickup payment is required'
+          ? 'Payment request recorded; no pickup payment is required'
           : 'Payment request created',
       data,
     })
@@ -112,8 +112,8 @@ const markPaid = async (req, res) => {
       success: true,
       message:
         data.notification?.state === 'FAILED'
-          ? 'Payment completed and moved to Warehouse, but email delivery failed after retries'
-          : 'Payment completed, recipients notified and devices moved to Warehouse',
+          ? 'Payment completed, but email delivery failed after retries'
+          : 'Payment completed and recipients notified',
       data,
     })
   } catch (error) {

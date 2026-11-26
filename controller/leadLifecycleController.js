@@ -6,7 +6,7 @@ import users from "../models/UsersModel.js";
 import mongoose from "mongoose";
 import timeRangeCal from "../utils/timeRangeCal.js";
 import leadsController from "./leadsController.js";
-import { getMaxNegotiationAmount } from "../utils/negotiationLimitUtils.js";
+import { getMaxNegotiationAmount, negotiationLimitMessage } from "../utils/negotiationLimitUtils.js";
 const ISE = "Internal Server Error";
 
 const updateOrderFields = (leadDoc, fields) => {
@@ -61,7 +61,7 @@ async function addQuickQoute(req, res) {
       if (na > maxNegotiationAmount) {
         return res.status(400).json({
           code: 400,
-          message: `Negotiated amount cannot exceed ₹${maxNegotiationAmount}`,
+          message: negotiationLimitMessage(maxNegotiationAmount),
         })
       }
     }

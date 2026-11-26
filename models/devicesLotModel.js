@@ -63,13 +63,6 @@ const devicesLotSchema = new mongoose.Schema(
     paidAt: { type: Date },
     paidBy: { type: mongoose.Types.ObjectId, ref: "users" },
     paymentReference: { type: String, trim: true },
-    warehouseStatus: {
-      type: String,
-      enum: ["NOT_READY", "IN_WAREHOUSE"],
-      default: "NOT_READY",
-      index: true,
-    },
-    warehouseTransferredAt: { type: Date },
     flag: {
       reason: { type: String, trim: true },
       flaggedBy: { type: mongoose.Types.ObjectId, ref: "users" },
@@ -112,7 +105,6 @@ devicesLotSchema.index({ uniqueCode: 1 });
 devicesLotSchema.index({ userId: 1 });
 devicesLotSchema.index({ createdAt: -1 });
 devicesLotSchema.index({ companyId: 1, paymentStatus: 1, createdAt: -1 });
-devicesLotSchema.index({ warehouseStatus: 1, companyId: 1, updatedAt: -1 });
 
 const devicesLotModel = mongoose.model("devicesLot", devicesLotSchema);
 

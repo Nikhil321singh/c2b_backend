@@ -186,7 +186,7 @@ const lotPopulate = (query) =>
     .populate('paidBy', 'name firstName lastName email role')
     .populate(
       'deviceList',
-      'uniqueCode status storePaymentStatus warehouseStatus price bonusPrice negotiatedAmount couponDiscount name emailId phoneNumber modelId',
+      'uniqueCode status storePaymentStatus price bonusPrice negotiatedAmount couponDiscount name emailId phoneNumber modelId',
     )
 
 const createHistory = (action, actorId, fromStatus, toStatus, remarks = '') => ({
@@ -203,26 +203,18 @@ const paymentRequestFields = (isDeferred, now) =>
     ? {
         status: LOT_STATUS.DONE,
         paymentStatus: STORE_PAYMENT_STATUSES.DONE,
-        warehouseStatus: 'IN_WAREHOUSE',
-        warehouseTransferredAt: now,
         paidAt: now,
         notificationState: 'NOT_REQUIRED',
         historyAction: 'PREPAID_DEFERRED_HANDOFF',
         historyRemark: 'No payout action required under prepaid/deferred mode',
-        leadWarehouseStatus: 'IN_WAREHOUSE',
-        leadDeliveryStatus: 'UNASSIGNED',
       }
     : {
         status: LOT_STATUS.REQUESTED,
         paymentStatus: STORE_PAYMENT_STATUSES.REQUESTED,
-        warehouseStatus: 'NOT_READY',
-        warehouseTransferredAt: undefined,
         paidAt: undefined,
         notificationState: 'NOT_SENT',
         historyAction: 'PAYMENT_REQUESTED',
         historyRemark: '',
-        leadWarehouseStatus: '',
-        leadDeliveryStatus: '',
       }
 
 const rollbackPaymentRequest = async (lotId) => {
@@ -232,8 +224,6 @@ const rollbackPaymentRequest = async (lotId) => {
       $unset: {
         storePaymentRequestId: '',
         storePaymentStatus: '',
-        warehouseStatus: '',
-        deliveryStatus: '',
       },
     },
   )
@@ -284,8 +274,6 @@ export const createStorePaymentRequest = async ({ actorId, leadIds }) => {
     status: fields.status,
     paymentStatus: fields.paymentStatus,
     paymentMode,
-    warehouseStatus: fields.warehouseStatus,
-    warehouseTransferredAt: fields.warehouseTransferredAt,
     paidAt: fields.paidAt,
     totalDevice: leadList.length,
     totalAmount: leadList.reduce(
@@ -329,8 +317,6 @@ export const createStorePaymentRequest = async ({ actorId, leadIds }) => {
       $set: {
         storePaymentRequestId: lot._id,
         storePaymentStatus: fields.paymentStatus,
-        warehouseStatus: fields.leadWarehouseStatus,
-        deliveryStatus: fields.leadDeliveryStatus,
         companyId: store.companyId._id,
       },
     },
@@ -390,11 +376,7 @@ const buildListScope = (actor, query) => {
 
 export const listStorePayments = async ({ actorId, query = {} }) => {
   const actor = await loadActor(actorId)
-  const allowedViewRoles = new Set([
-    ...REQUEST_ROLES,
-    ROLES.ACCOUNTS_USER,
-    ROLES.WAREHOUSE_USER,
-  ])
+  const allowedViewRoles = new Set([...REQUEST_ROLES, ROLES.ACCOUNTS_USER])
   if (!allowedViewRoles.has(actor.role)) {
     throw new StorePaymentError('Your role cannot view store payments', 403)
   }
@@ -471,7 +453,7 @@ const sendWithRetries = async (mailOptions, maxAttempts = 3) => {
 }
 
 const resolvePaidRecipients = async (lot) => {
-  const [store, company, managers, companyAdmins, logistics] =
+  const [store, company, managers, companyAdmins] =
     await Promise.all([
       storeModel.findById(lot.storeId).lean(),
       companyModel.findById(lot.companyId).lean(),
@@ -492,14 +474,6 @@ const resolvePaidRecipients = async (lot) => {
         })
         .select('email')
         .lean(),
-      usersModel
-        .find({
-          companyId: lot.companyId,
-          role: ROLES.LOGISTIC_USER,
-          status: true,
-        })
-        .select('email')
-        .lean(),
     ])
   const managerEmails = managers.map((user) => user.email)
   const recipients =
@@ -509,9 +483,6 @@ const resolvePaidRecipients = async (lot) => {
           store?.email,
           ...managerEmails,
           ...companyAdmins.map((user) => user.email),
-          ...(lot.paymentMode === STORE_PAYMENT_MODES.COMPANY_ACCOUNTS
-            ? logistics.map((user) => user.email)
-            : []),
         ]
   return {
     recipients: [
@@ -543,7 +514,6 @@ const sendPaidNotification = async (lot) => {
       <p>Amount: <strong>₹${Number(lot.totalAmount).toFixed(2)}</strong></p>
       <p>Reference: <strong>${escapeHtml(lot.paymentReference || 'Not provided')}</strong></p>
       ${lot.paymentReceipt ? `<p><a href="${escapeHtml(lot.paymentReceipt)}">View receipt</a></p>` : ''}
-      <p>The devices are now available in the Warehouse queue.</p>
     `,
   })
   return { ...delivery, recipients }
@@ -795,8 +765,6 @@ export const markStorePaymentPaid = async ({
   lot.paymentReference = String(paymentReference || '').trim()
   lot.paymentReceipt = String(paymentReceipt || lot.paymentReceipt || '').trim()
   lot.remarks = String(remarks || lot.remarks || '').trim()
-  lot.warehouseStatus = 'IN_WAREHOUSE'
-  lot.warehouseTransferredAt = now
   lot.history.push(
     createHistory(
       'MARKED_PAID',
@@ -804,12 +772,6 @@ export const markStorePaymentPaid = async ({
       LOT_STATUS.REQUESTED,
       LOT_STATUS.DONE,
       remarks,
-    ),
-    createHistory(
-      'WAREHOUSE_HANDOFF',
-      actor._id,
-      LOT_STATUS.DONE,
-      'In Warehouse',
     ),
   )
   try {
@@ -827,28 +789,16 @@ export const markStorePaymentPaid = async ({
       {
         $set: {
           storePaymentStatus: STORE_PAYMENT_STATUSES.DONE,
-          warehouseStatus: 'IN_WAREHOUSE',
-          deliveryStatus: 'UNASSIGNED',
           status: LOT_STATUS.DONE,
         },
         $push: {
-          history: {
-            $each: [
-              createHistory(
-                'STORE_PAYMENT_MARKED_PAID',
-                actor._id,
-                LOT_STATUS.REQUESTED,
-                LOT_STATUS.DONE,
-                remarks,
-              ),
-              createHistory(
-                'WAREHOUSE_HANDOFF',
-                actor._id,
-                LOT_STATUS.DONE,
-                'In Warehouse',
-              ),
-            ],
-          },
+          history: createHistory(
+            'STORE_PAYMENT_MARKED_PAID',
+            actor._id,
+            LOT_STATUS.REQUESTED,
+            LOT_STATUS.DONE,
+            remarks,
+          ),
         },
       },
     )
@@ -863,8 +813,6 @@ export const markStorePaymentPaid = async ({
       {
         $set: {
           storePaymentStatus: STORE_PAYMENT_STATUSES.REQUESTED,
-          warehouseStatus: '',
-          deliveryStatus: '',
           status: LOT_STATUS.REQUESTED,
         },
       },
@@ -876,8 +824,6 @@ export const markStorePaymentPaid = async ({
     lot.paymentReference = ''
     lot.paymentReceipt = previousReceipt
     lot.remarks = previousRemarks
-    lot.warehouseStatus = 'NOT_READY'
-    lot.warehouseTransferredAt = undefined
     lot.history.push(
       createHistory(
         'MARK_PAID_ROLLED_BACK',
@@ -893,13 +839,13 @@ export const markStorePaymentPaid = async ({
       500,
     )
   }
-  // Notify the requester that their payment request is paid and in Warehouse.
+  // Notify the requester that their payment request is paid.
   await emitNotification({
     userId: lot.userId,
     companyId: lot.companyId,
     type: NOTIFICATION_TYPES.STORE_PAYMENT_PAID,
     title: 'Payment request marked paid',
-    body: `Payment request ${lot.uniqueCode} was marked paid and moved to Warehouse.`,
+    body: `Payment request ${lot.uniqueCode} was marked paid.`,
     entityType: 'storePayment',
     entityId: lot._id,
     createdBy: actor._id,

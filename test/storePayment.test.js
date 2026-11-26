@@ -9,7 +9,6 @@ import {
   StorePaymentError,
   assertLeadEligible,
 } from '../services/storePaymentService.js'
-import { courierConfigurationStatus } from '../integrations/courier/courierClient.js'
 
 describe('Store payment workflow contract', () => {
   it('defaults companies to the company-accounts payment mode', () => {
@@ -23,15 +22,12 @@ describe('Store payment workflow contract', () => {
     const lot = new devicesLotModel()
     expect(lot.paymentStatus).to.equal(STORE_PAYMENT_STATUSES.REQUESTED)
     expect(lot.paymentMode).to.equal(STORE_PAYMENT_MODES.COMPANY_ACCOUNTS)
-    expect(lot.warehouseStatus).to.equal('NOT_READY')
     expect(lot.notification.state).to.equal('NOT_SENT')
   })
 
-  it('keeps new leads outside the store-payment and warehouse queues', () => {
+  it('keeps new leads outside the store-payment queue', () => {
     const lead = new leadsModel()
     expect(lead.storePaymentStatus).to.equal('')
-    expect(lead.warehouseStatus).to.equal('')
-    expect(lead.deliveryStatus).to.equal('')
   })
 
   it('blocks store payment while a related customer payout is incomplete', () => {
@@ -51,24 +47,5 @@ describe('Store payment workflow contract', () => {
     )
     expect(() => assertLeadEligible({ ...lead, payoutStatus: 'SUCCESS' }, store))
       .to.not.throw()
-  })
-
-  it('keeps courier push disabled without server-side configuration', () => {
-    const previousProvider = process.env.COURIER_PROVIDER
-    const previousUrl = process.env.COURIER_CREATE_ORDER_URL
-    const previousToken = process.env.COURIER_API_TOKEN
-    delete process.env.COURIER_PROVIDER
-    delete process.env.COURIER_CREATE_ORDER_URL
-    delete process.env.COURIER_API_TOKEN
-    expect(courierConfigurationStatus().configured).to.equal(false)
-    if (previousProvider) {
-      process.env.COURIER_PROVIDER = previousProvider
-    }
-    if (previousUrl) {
-      process.env.COURIER_CREATE_ORDER_URL = previousUrl
-    }
-    if (previousToken) {
-      process.env.COURIER_API_TOKEN = previousToken
-    }
   })
 })

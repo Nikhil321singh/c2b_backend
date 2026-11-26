@@ -49,10 +49,11 @@ import payoutConfigRoute from './routes/payoutConfigRoute.js'
 import hsbcPaymentWebhookRoute from './routes/hsbcPaymentWebhookRoute.js'
 import { reconcileIncompletePayouts } from './services/buybackPayoutService.js'
 import ivsRoute from './routes/ivsRoute.js'
+import digilockerAadhaarRoute from './routes/digilockerAadhaarRoute.js'
+import blueDartRoute from './routes/blueDartRoute.js'
+import logisticsRoute from './routes/logisticsRoute.js'
 import storePaymentRoute from './routes/storePaymentRoute.js'
-import warehouseRoute from './routes/warehouseRoute.js'
 import notificationRoute from './routes/notificationRoute.js'
-import diagnosisRoute from './routes/diagnosisRoute.js'
 
 
 import {
@@ -563,13 +564,14 @@ server.use('/api/paysprint-aadhaar', paysprintAadhaarRoute)
 server.use('/api/erasure', erasureRoute)
 server.use('/api/imei', ivsRoute)
 server.use('/api/dynamic-pricing', bonusSlabRoute)
+server.use('/api/digilocker-aadhaar', digilockerAadhaarRoute)
+server.use('/api/bluedart', blueDartRoute)
+server.use('/api/logistics', logisticsRoute)
 server.use('/api/buyback-payouts', buybackPayoutRoute)
 server.use('/api/payout-config', payoutConfigRoute)
 server.use('/api/hsbc-payments', hsbcPaymentWebhookRoute)
 server.use('/api/store-payments', storePaymentRoute)
-server.use('/api/warehouse', warehouseRoute)
 server.use('/api/notifications', notificationRoute)
-server.use('/api/diagnosis', diagnosisRoute)
 
 server.get('/', (req, res) => {
   return res.send('Welcome to the Grest C2B API!')

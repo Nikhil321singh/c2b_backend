@@ -26,8 +26,6 @@ const USER_ROLES = [
   'Sales',
   'Store Admin',
   'Accounts User',
-  'Warehouse User',
-  'Logistic User',
 ]
 
 // Validation helpers

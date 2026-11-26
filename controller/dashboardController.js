@@ -5,6 +5,8 @@ import models from '../models/modelsModel.js'
 import quickview from '../models/quickviewModel.js'
 import timeRangeCal from '../utils/timeRangeCal.js'
 import brands from '../models/brandsModel.js'
+import gradeprice from '../models/gradePriceModel.js'
+import UsersModel from '../models/UsersModel.js'
 import {
   decryptPIIFieldsArray,
   PII_FIELDS_TO_ENCRYPT,
@@ -250,6 +252,47 @@ async function topSelling(req, res) {
   }
 }
 
+async function resolveCompanyId(userId) {
+  if (!userId || !mongoose.Types.ObjectId.isValid(userId)) {
+    return null
+  }
+  const user = await UsersModel.findById(userId).select('companyId').lean()
+  return user?.companyId || null
+}
+
+function buildPriceQuery(modelIds, companyId) {
+  const base = { modelId: { $in: modelIds } }
+  const noCompanyFilter = [{ companyId: null }, { companyId: { $exists: false } }]
+  if (companyId) {
+    return { ...base, $or: [{ companyId }, { isGlobalPrice: true, $or: noCompanyFilter }] }
+  }
+  return { ...base, isGlobalPrice: true, $or: noCompanyFilter }
+}
+
+function pickCompanyPrices(priceDocs, companyId) {
+  const priceByKey = new Map()
+  for (const p of priceDocs) {
+    const key = `${p.modelId}|${p.storage}|${p.RAM}`
+    const isCompanyMatch = companyId && String(p.companyId) === String(companyId)
+    if (isCompanyMatch || !priceByKey.has(key)) {
+      priceByKey.set(key, p)
+    }
+  }
+  return priceByKey
+}
+
+function enrichWithPrices(matchingPhones, priceByKey) {
+  return matchingPhones.map((phone) => ({
+    ...phone,
+    config: (phone.config || []).map((cfg) => {
+      const key = `${phone._id}|${cfg.storage}|${cfg.RAM}`
+      const priceDoc = priceByKey.get(key)
+      const livePrice = priceDoc?.grades?.A_PLUS
+      return livePrice !== undefined ? { ...cfg, price: livePrice } : cfg
+    }),
+  }))
+}
+
 async function searchPhone(req, res) {
   try {
     let phoneName = req.body.name
@@ -278,14 +321,26 @@ async function searchPhone(req, res) {
       return regex.test(comparableName)
     })
 
-    if (matchingPhones.length > 0) {
-      res.status(200).json(matchingPhones)
-    } else {
-      res.status(404).json({ message: 'No phones found' })
+    if (matchingPhones.length === 0) {
+      return res.status(404).json({ message: 'No phones found' })
     }
+
+    const companyId = await resolveCompanyId(req.userId)
+    const modelIds = matchingPhones.map((phone) => phone._id)
+    const priceQuery = buildPriceQuery(modelIds, companyId)
+
+    const priceDocs = await gradeprice
+      .find(priceQuery)
+      .select('modelId storage RAM grades companyId')
+      .lean()
+
+    const priceByKey = pickCompanyPrices(priceDocs, companyId)
+    const matchingPhonesWithLivePrice = enrichWithPrices(matchingPhones, priceByKey)
+
+    return res.status(200).json(matchingPhonesWithLivePrice)
   } catch (err) {
     safeLog.error(err)
-    res.status(500).json({ message: 'Internal server error' })
+    return res.status(500).json({ message: 'Internal server error' })
   }
 }
 

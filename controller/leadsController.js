@@ -622,9 +622,9 @@ const handleLeadPagination = async (
   const totalCounts = countResult[0]?.totalCounts || 0
 
   aggregationPipeline.push(
-    { $sort: { createdAt: -1 } },
+    { $sort: { createdAt: -1, _id: -1 } },
     { $skip: skip },
-    { $limit: limit * 2 },
+    { $limit: limit },
   )
 
   const data = await leads.aggregate(aggregationPipeline, {

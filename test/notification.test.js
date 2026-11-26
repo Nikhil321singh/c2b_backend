@@ -26,12 +26,9 @@ describe('notification model defaults', () => {
 
 describe('notification types', () => {
   it('recognises the operational notification types', () => {
-    expect(isValidNotificationType(NOTIFICATION_TYPES.LOGISTIC_ASSIGNMENT)).to.equal(true)
     expect(isValidNotificationType(NOTIFICATION_TYPES.STORE_PAYMENT_PAID)).to.equal(true)
     expect(isValidNotificationType(NOTIFICATION_TYPES.STORE_PAYMENT_FLAGGED)).to.equal(true)
     expect(isValidNotificationType(NOTIFICATION_TYPES.PAYMENT_REQUEST_CREATED)).to.equal(true)
-    expect(isValidNotificationType(NOTIFICATION_TYPES.LEAD_DELIVERED)).to.equal(true)
-    expect(isValidNotificationType(NOTIFICATION_TYPES.LEAD_CANCELLED)).to.equal(true)
     expect(isValidNotificationType(NOTIFICATION_TYPES.PAYOUT_APPROVAL_DECIDED)).to.equal(true)
   })
 
@@ -48,18 +45,18 @@ describe('notification types', () => {
 describe('buildNotification', () => {
   const valid = () => ({
     userId: RECIPIENT,
-    type: NOTIFICATION_TYPES.LOGISTIC_ASSIGNMENT,
-    title: 'New lead assigned to you',
-    body: '  Lead ORD-1 is out for pickup.  ',
-    entityType: 'lead',
+    type: NOTIFICATION_TYPES.STORE_PAYMENT_PAID,
+    title: 'Payment request marked paid',
+    body: '  Payment request PAY-1 was marked paid.  ',
+    entityType: 'storePayment',
     entityId: new mongoose.Types.ObjectId(),
   })
 
   it('normalises a valid notification and trims strings', () => {
     const built = buildNotification(valid())
     expect(built.userId).to.equal(RECIPIENT)
-    expect(built.type).to.equal(NOTIFICATION_TYPES.LOGISTIC_ASSIGNMENT)
-    expect(built.body).to.equal('Lead ORD-1 is out for pickup.')
+    expect(built.type).to.equal(NOTIFICATION_TYPES.STORE_PAYMENT_PAID)
+    expect(built.body).to.equal('Payment request PAY-1 was marked paid.')
     expect(built.companyId).to.equal(null)
     expect(built.createdBy).to.equal(null)
   })

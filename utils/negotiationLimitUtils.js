@@ -1,10 +1,10 @@
 import companyModel from '../models/companyModel.js'
 
-export const DEFAULT_NEGOTIATION_LIMIT = 10000
+// Maximum negotiation amount allowed for every company.
+export const DEFAULT_NEGOTIATION_LIMIT = 2000
 
-const NEGOTIATION_LIMITS = {
-  COMPSMPL2: 500, // SANGEETHA MOBILES PRIVATE LIMITED
-}
+// Optional per-company overrides (companyCode -> limit).
+const NEGOTIATION_LIMITS = {}
 
 export const getMaxNegotiationAmount = async (companyId) => {
   if (!companyId) {
@@ -23,7 +23,11 @@ export const getMaxNegotiationAmount = async (companyId) => {
   return NEGOTIATION_LIMITS[company.companyCode] ?? DEFAULT_NEGOTIATION_LIMIT
 }
 
+export const negotiationLimitMessage = (maxNegotiationAmount) =>
+  `Negotiation amount can be at most ₹${maxNegotiationAmount}. Please enter an amount of ₹${maxNegotiationAmount} or less to continue.`
+
 export default {
   getMaxNegotiationAmount,
+  negotiationLimitMessage,
   DEFAULT_NEGOTIATION_LIMIT,
 }

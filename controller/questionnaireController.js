@@ -43,7 +43,7 @@ import {
   PII_FIELDS_TO_ENCRYPT,
 } from '../utils/kmsEncryption.js'
 import { isSangeetaStore } from '../utils/sangeetaStoreUtils.js'
-import { getMaxNegotiationAmount } from '../utils/negotiationLimitUtils.js'
+import { getMaxNegotiationAmount, negotiationLimitMessage } from '../utils/negotiationLimitUtils.js'
 
 import {
   generateInvoiceHtml,
@@ -357,7 +357,7 @@ const applyNegotiationRules = async (lead, reqBody) => {
     lead.userId?.companyId,
   )
   if (lead.negotiatedAmount > maxNegotiationAmount) {
-    return `Negotiated amount cannot exceed ₹${maxNegotiationAmount}`
+    return negotiationLimitMessage(maxNegotiationAmount)
   }
   if (lead.bonusPrice > 0) {
     lead.bonusPrice = 0

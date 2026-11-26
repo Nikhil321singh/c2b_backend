@@ -187,12 +187,11 @@ components:
         type:
           type: string
           enum:
-            - LOGISTIC_ASSIGNMENT
             - STORE_PAYMENT_PAID
             - STORE_PAYMENT_FLAGGED
         title:
           type: string
-          example: New lead assigned to you
+          example: Payment request marked paid
         body:
           type: string
         entityType:

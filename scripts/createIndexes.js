@@ -100,14 +100,6 @@ async function createIndexes() {
         key: { storePaymentStatus: 1 },
         name: 'storePaymentStatus',
       },
-      {
-        key: { warehouseStatus: 1, companyId: 1, updatedAt: -1 },
-        name: 'warehouseStatus_companyId_updatedAt',
-      },
-      {
-        key: { logisticAgentId: 1, deliveryStatus: 1, updatedAt: -1 },
-        name: 'logisticAgentId_deliveryStatus_updatedAt',
-      },
     ]
 
     const usersIndexes = [
@@ -132,10 +124,6 @@ async function createIndexes() {
       {
         key: { companyId: 1, paymentStatus: 1, createdAt: -1 },
         name: 'companyId_paymentStatus_createdAt',
-      },
-      {
-        key: { warehouseStatus: 1, companyId: 1, updatedAt: -1 },
-        name: 'warehouseStatus_companyId_updatedAt',
       },
     ]
 

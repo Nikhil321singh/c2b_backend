@@ -19,8 +19,6 @@ const roleAdminManager = 'Admin Manager'
 const roleCompanyAdmin = 'Company Admin'
 const roleStoreAdmin = 'Store Admin'
 const roleAccountsUser = 'Accounts User'
-const roleWarehouseUser = 'Warehouse User'
-const roleLogisticUser = 'Logistic User'
 const superAdmin = 'Super Admin'
 
 const PASSWORD_MIN_LENGTH = 6
@@ -41,8 +39,6 @@ const USER_ROLES = [
   roleSales,
   roleStoreAdmin,
   roleAccountsUser,
-  roleWarehouseUser,
-  roleLogisticUser,
 ]
 
 // Roles with assigned stores (for filtering)

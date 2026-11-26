@@ -39,9 +39,10 @@ function calcTotalPrice(lead) {
   return Math.floor(lead.price + (lead.bonusPrice || 0) + (lead.negotiatedAmount || 0) + (lead.couponDiscount || 0))
 }
 
-const RADICAL_RETAIL = 'Radical Retail Pvt Ltd'
-const RADICAL_GSTIN = '29ABCDE1234F1Z5'
-const RADICAL_ADDRESS = 'Khasra No. 34/22, Ground Floor, NK Tower, Kanhai Road, Sector-45, Gurugram, Haryana - 122003'
+// Hardcoded to match the frontend PurchaseReceipt CompanyHeader
+const COMPANY_NAME = 'Radical Aftermarket Services Pvt. Ltd'
+const COMPANY_GSTIN = '06AAJCR2110E1ZX'
+const COMPANY_ADDRESS = 'Khasra No. 34/22, 1st Floor, NK Tower, Kanhai Road, Sector-45, Gurugram, Haryana - 122003'
 
 export const generateInvoiceHtml = (
   template,
@@ -66,7 +67,6 @@ export const generateInvoiceHtml = (
     `
     : ''
 
-  const isRadicalRetail = lead?.companyInfo?.name === RADICAL_RETAIL
   const totalPrice = showPrice ? calcTotalPrice(lead) : undefined
 
   // Payout transaction details (mode/reference/date/status). Present only for
@@ -105,15 +105,15 @@ export const generateInvoiceHtml = (
     storeName: lead?.store?.storeName || '',
     address: lead?.store?.address || '',
     websiteShortName: process.env.SHORT_NAME,
-    companyName: isRadicalRetail ? RADICAL_RETAIL : 'Aftermarket',
+    companyName: COMPANY_NAME,
     priceHeader: showPrice
       ? '<th style="width: 25%; text-align: left">PRICE</th>'
       : '',
     priceCell: showPrice ? `<td>Rs. ${totalPrice}/-</td>` : '',
     itemWidth: showPrice ? 'width: 65%;' : 'width: 90%;',
     price: totalPrice,
-    companyGstin: isRadicalRetail ? RADICAL_GSTIN : process.env.COMPANY_GSTIN,
-    companyAddress: isRadicalRetail ? RADICAL_ADDRESS : process.env.COMPANY_ADDRESS,
+    companyGstin: COMPANY_GSTIN,
+    companyAddress: COMPANY_ADDRESS,
     companyContact: process.env.COMPANY_CONTACT,
     companyEmail: process.env.SUPPORT_EMAIL,
     logoUrl: process.env.LOGO_URL,
@@ -215,25 +215,39 @@ export const normalizeShippingLabelPdf = (label) => {
 }
 
 /**
- * Store a courier shipping label PDF and return its S3 URL. Couriers return the
- * label as base64 or a byte array in the waybill response, which is too large
- * to keep on the lead document.
+ * Store a courier shipping label PDF in S3. Couriers return the label as base64
+ * or a byte array in the waybill response, which is too large to keep on the
+ * shipment document.
  * @param {Buffer|string|number[]} label - Label content returned by the courier
- * @param {string} uniqueCode - Reference used in the object key
- * @returns {Promise<string>} - The uploaded label's URL
+ * @param {string} awbNo - Waybill number used in the object key
+ * @returns {Promise<{key: string, url: string}>} - The uploaded label's key and URL
  */
-export const uploadShippingLabelToS3 = async (label, uniqueCode) => {
+export const uploadShippingLabelToS3 = async (label, awbNo) => {
   const body = normalizeShippingLabelPdf(label)
   const uploadParams = {
     Bucket: process.env.S3_BUCKET_NAME,
-    Key: `${process.env.S3_LABEL_FOLDER || 'shipping-labels'}/label-${uniqueCode}-${Date.now()}.pdf`,
+    Key: `${process.env.S3_LABEL_FOLDER || 'shipping-labels'}/label-${awbNo}-${Date.now()}.pdf`,
     Body: body,
     ContentType: PDF_CONTENT_TYPE,
   }
 
   const uploadResult = await s3.upload(uploadParams).promise()
-  return uploadResult.Location
+  return { key: uploadResult.Key || uploadParams.Key, url: uploadResult.Location }
 }
+
+/**
+ * Short-lived download link for a stored shipping label, so labels can be
+ * re-printed whether or not the bucket is public.
+ * @param {string} key - S3 object key of the label
+ * @param {number} expiresInSeconds - Link lifetime
+ * @returns {string} - Signed GET URL
+ */
+export const getShippingLabelSignedUrl = (key, expiresInSeconds = 300) =>
+  s3.getSignedUrl('getObject', {
+    Bucket: process.env.S3_BUCKET_NAME,
+    Key: key,
+    Expires: expiresInSeconds,
+  })
 
 /**
  * Fetch signature from S3 and convert to base64

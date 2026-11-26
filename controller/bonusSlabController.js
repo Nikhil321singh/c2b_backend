@@ -1,7 +1,7 @@
 import BonusSlabConfig from '../models/BonusSlabConfig.js'
 import companyModel from '../models/companyModel.js'
 import { safeLog } from '../utils/piiMasking.js'
-import { getMaxNegotiationAmount, DEFAULT_NEGOTIATION_LIMIT } from '../utils/negotiationLimitUtils.js'
+import { getMaxNegotiationAmount, negotiationLimitMessage, DEFAULT_NEGOTIATION_LIMIT } from '../utils/negotiationLimitUtils.js'
 import xlsx from 'xlsx'
 
 const REQUIRED_COMPANY_ID = 'Company ID is required'
@@ -383,15 +383,24 @@ const calculateBonus = async (req, res) => {
       return res.status(400).json({ success: false, message: 'Exact Value is required' })
     }
 
-    const na = negotiatedAmount || 0
+    const na = Number(negotiatedAmount) || 0
     const cd = couponDiscount || 0
     const maxNegotiationAmount = await getMaxNegotiationAmount(companyId)
     const noPricingData = { slabBonusAmount: 0, negotiatedAmount: na, couponDiscount: cd, slabApplied: null, maxNegotiationAmount }
 
-    if (applyNegotiatedAmount && na > maxNegotiationAmount) {
+    if (na < 0) {
       return res.status(400).json({
         success: false,
-        message: `Negotiated amount cannot exceed ₹${maxNegotiationAmount}`,
+        message: 'Negotiation amount cannot be negative.',
+        maxNegotiationAmount,
+      })
+    }
+
+    if (na > maxNegotiationAmount) {
+      return res.status(400).json({
+        success: false,
+        message: negotiationLimitMessage(maxNegotiationAmount),
+        maxNegotiationAmount,
       })
     }
 
