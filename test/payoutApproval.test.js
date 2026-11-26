@@ -303,3 +303,33 @@ describe('Payout approval: refused cases', () => {
     )
   })
 })
+
+describe('Lead status after a customer payout', () => {
+  afterEach(restoreAll)
+
+  it('a successful HSBC payout marks the lead Completed', async () => {
+    const { syncLeadStatus } = await import('../services/buybackPayout/processing.js')
+    let update
+    fake(leads, 'findByIdAndUpdate', async (_id, body) => {
+      update = body
+      return {}
+    })
+    await syncLeadStatus({ _id: oid(), leadId: oid(), status: PAYOUT_STATUS.SUCCESS, amount: 2915 })
+    expect(update.status).to.equal('Completed')
+    expect(update.payoutStatus).to.equal(PAYOUT_STATUS.SUCCESS)
+  })
+
+  it('an unfinished payout leaves the lead status alone', async () => {
+    const { syncLeadStatus } = await import('../services/buybackPayout/processing.js')
+    for (const status of [PAYOUT_STATUS.PROCESSING, PAYOUT_STATUS.FAILED, PAYOUT_STATUS.READY_FOR_PAYMENT]) {
+      let update
+      fake(leads, 'findByIdAndUpdate', async (_id, body) => {
+        update = body
+        return {}
+      })
+      await syncLeadStatus({ _id: oid(), leadId: oid(), status })
+      expect(update, status).to.not.have.property('status')
+      restoreAll()
+    }
+  })
+})

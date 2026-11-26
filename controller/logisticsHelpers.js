@@ -31,6 +31,9 @@ export const PAID_LOT_MATCH = {
       status: PENDING_PAYMENT,
       paymentReceipt: { $exists: true, $nin: [null, ''] },
     },
+    // Store payment requests go to logistics once the store is paid (Mark
+    // Paid), or straight away under the pre-paid / deferred mode.
+    { paymentStatus: 'PAYMENT_DONE' },
   ],
 }
 

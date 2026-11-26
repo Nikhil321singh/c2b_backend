@@ -12,7 +12,8 @@ const syncLeadStatus = (payout) =>
     payoutStatus: payout.status,
     ...(payout.status === PAYOUT_STATUS.SUCCESS
       ? {
-          status: 'Payment Completed',
+          // Same final lead status as the manual store-payment flow.
+          status: 'Completed',
           $push: {
             history: {
               action: 'HSBC UPI payout completed',

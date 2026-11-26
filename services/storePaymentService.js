@@ -32,6 +32,11 @@ const LOT_STATUS = {
   DONE: 'Payment Done',
 }
 
+// A lead whose store payment is done is "Completed", as in the original
+// pickup flow (reports and the Pickup & Cancel list rely on it). The lot
+// itself keeps "Payment Done".
+export const LEAD_COMPLETED_STATUS = 'Completed'
+
 const CLAIM_STATUS = 'PROCESSING'
 
 const REQUEST_ROLES = new Set([
@@ -256,6 +261,19 @@ const notifyAccountsUsers = async ({ isDeferred, store, actor, lot }) => {
   )
 }
 
+// Lot numbers use the original pickup format, LOT-<milliseconds>. If two
+// requests land in the same millisecond, the next free number is used.
+const LOT_CODE_ATTEMPTS = 5
+export const nextLotCode = async (now = Date.now()) => {
+  for (let offset = 0; offset < LOT_CODE_ATTEMPTS; offset += 1) {
+    const code = `LOT-${now + offset}`
+    if (!(await devicesLotModel.exists({ uniqueCode: code }))) {
+      return code
+    }
+  }
+  throw new StorePaymentError('Could not create a lot number. Please try again.', 409)
+}
+
 export const createStorePaymentRequest = async ({ actorId, leadIds }) => {
   const [actor, context] = await Promise.all([
     loadActor(actorId),
@@ -284,10 +302,7 @@ export const createStorePaymentRequest = async ({ actorId, leadIds }) => {
     userId: actor._id,
     storeId: store._id,
     companyId: store.companyId._id,
-    uniqueCode: `PAY-${Date.now()}-${Math.random()
-      .toString(36)
-      .slice(2, 7)
-      .toUpperCase()}`,
+    uniqueCode: await nextLotCode(),
     requestedAt: now,
     notification: {
       state: fields.notificationState,
@@ -332,14 +347,15 @@ export const createStorePaymentRequest = async ({ actorId, leadIds }) => {
     { storePaymentRequestId: lot._id },
     {
       $set: {
-        status: fields.status,
+        // Pre-paid / deferred is settled at once, so the lead is completed.
+        status: isDeferred ? LEAD_COMPLETED_STATUS : fields.status,
       },
       $push: {
         history: createHistory(
           fields.historyAction,
           actor._id,
           '',
-          fields.status,
+          isDeferred ? LEAD_COMPLETED_STATUS : fields.status,
         ),
       },
     },
@@ -376,6 +392,77 @@ const buildListScope = (actor, query) => {
   return filter
 }
 
+const escapeRegex = (value) => String(value).replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
+
+const startOfDay = (value) => {
+  const date = new Date(value)
+  date.setHours(0, 0, 0, 0)
+  return date
+}
+
+const endOfDay = (value) => {
+  const date = new Date(value)
+  date.setHours(23, 59, 59, 999)
+  return date
+}
+
+const isValidDate = (value) => value && !Number.isNaN(new Date(value).getTime())
+
+// Optional filters used by the Store Requests tab on Customer Payouts: only
+// real payment requests (older pickup lots have no paymentMode), lot number
+// search, request date range and store region.
+const applyRequestFilters = async (filter, query) => {
+  if (query.requestsOnly === 'true') {
+    filter.paymentMode = { $exists: true }
+  }
+  const search = String(query.search || '').trim()
+  if (search) {
+    filter.uniqueCode = { $regex: escapeRegex(search.slice(0, 50)), $options: 'i' }
+  }
+  if (query.fromDate || query.toDate) {
+    if (!isValidDate(query.fromDate) || !isValidDate(query.toDate)) {
+      throw new StorePaymentError('Choose both a valid from and to date')
+    }
+    if (new Date(query.fromDate) > new Date(query.toDate)) {
+      throw new StorePaymentError('From date must be before to date')
+    }
+    filter.createdAt = { $gte: startOfDay(query.fromDate), $lte: endOfDay(query.toDate) }
+  }
+  const region = String(query.region || '').trim()
+  if (region) {
+    const regionStores = await storeModel
+      .find({ region: { $regex: `^${escapeRegex(region)}$`, $options: 'i' } })
+      .select('_id')
+      .lean()
+    const regionIds = regionStores.map((store) => String(store._id))
+    // Keep any store restriction already applied (role scope or store filter).
+    const current = filter.storeId
+    let allowed = regionIds
+    if (current?.$in) {
+      const scoped = new Set(current.$in.map(String))
+      allowed = regionIds.filter((id) => scoped.has(id))
+    } else if (current) {
+      allowed = regionIds.filter((id) => id === String(current))
+    }
+    filter.storeId = { $in: allowed.map((id) => new mongoose.Types.ObjectId(id)) }
+  }
+}
+
+// Stores (with region) that have requests the user may see, for the filters.
+const listStoreOptions = async (actor) => {
+  const scope = buildListScope(actor, {})
+  scope.paymentMode = { $exists: true }
+  const storeIds = await devicesLotModel.distinct('storeId', scope)
+  if (storeIds.length === 0) {
+    return []
+  }
+  return storeModel
+    .find({ _id: { $in: storeIds } })
+    .select('storeName region')
+    .sort({ storeName: 1 })
+    .lean()
+}
+
 export const listStorePayments = async ({ actorId, query = {} }) => {
   const actor = await loadActor(actorId)
   const allowedViewRoles = new Set([...REQUEST_ROLES, ROLES.ACCOUNTS_USER])
@@ -385,7 +472,8 @@ export const listStorePayments = async ({ actorId, query = {} }) => {
   const page = Math.max(Number(query.page) || 0, 0)
   const limit = Math.min(Math.max(Number(query.limit) || 25, 1), 100)
   const filter = buildListScope(actor, query)
-  const [items, total] = await Promise.all([
+  await applyRequestFilters(filter, query)
+  const [items, total, stores] = await Promise.all([
     lotPopulate(
       devicesLotModel
         .find(filter)
@@ -394,8 +482,9 @@ export const listStorePayments = async ({ actorId, query = {} }) => {
         .limit(limit),
     ).lean(),
     devicesLotModel.countDocuments(filter),
+    query.withStores === 'true' ? listStoreOptions(actor) : undefined,
   ])
-  return { items, total, page, limit }
+  return { items, total, page, limit, ...(stores ? { stores } : {}) }
 }
 
 export const getStorePayment = async ({ actorId, paymentId }) => {
@@ -735,6 +824,8 @@ export const markStorePaymentPaid = async ({
   paymentReference,
   paymentReceipt,
   remarks,
+  receiptFile,
+  uploadReceipt,
 }) => {
   const { actor, lot } = await loadActionContext(actorId, paymentId)
   assertPaymentActor(actor, lot)
@@ -743,6 +834,18 @@ export const markStorePaymentPaid = async ({
   }
   if (lot.paymentStatus !== STORE_PAYMENT_STATUSES.REQUESTED) {
     throw new StorePaymentError('Resolve the flag before marking payment paid', 409)
+  }
+  // An uploaded receipt file is stored only once the payer and status checks
+  // pass, and before anything changes, so a failed upload leaves no trace.
+  if (receiptFile && uploadReceipt) {
+    try {
+      paymentReceipt = await uploadReceipt(receiptFile)
+    } catch (error) {
+      safeLog.error('Store payment receipt upload failed', error)
+      throw new StorePaymentError(
+        `Receipt upload failed: ${error.message || 'unknown error'}`,
+      )
+    }
   }
   const claim = await devicesLotModel.updateOne(
     {
@@ -791,14 +894,14 @@ export const markStorePaymentPaid = async ({
       {
         $set: {
           storePaymentStatus: STORE_PAYMENT_STATUSES.DONE,
-          status: LOT_STATUS.DONE,
+          status: LEAD_COMPLETED_STATUS,
         },
         $push: {
           history: createHistory(
             'STORE_PAYMENT_MARKED_PAID',
             actor._id,
             LOT_STATUS.REQUESTED,
-            LOT_STATUS.DONE,
+            LEAD_COMPLETED_STATUS,
             remarks,
           ),
         },
