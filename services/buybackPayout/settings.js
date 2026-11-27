@@ -6,7 +6,14 @@ import {
   assertWithinPayoutCeiling,
   identityHash,
   SUPPORTED_HSBC_MODES,
+  LEAD_PAYMENT_PENDING_STATUS,
 } from './validation.js'
+
+// A pending HSBC payout is not a sale yet, but it must still count towards
+// the device cooldown and customer limits, or pending links would bypass them.
+export const SOLD_OR_PAYMENT_PENDING = {
+  $or: [{ is_selled: true }, { status: LEAD_PAYMENT_PENDING_STATUS }],
+}
 
 const getStorePayoutSettings = async (storeId) => {
   const store = await storeModel
@@ -93,12 +100,16 @@ const assertDeviceCooldown = async ({
     .findOne({
       _id: { $ne: lead._id },
       deviceIdentityHash,
-      is_selled: true,
-      $or: [
-        { soldAt: { $gte: cooldownStart } },
+      $and: [
+        SOLD_OR_PAYMENT_PENDING,
         {
-          soldAt: { $exists: false },
-          updatedAt: { $gte: cooldownStart },
+          $or: [
+            { soldAt: { $gte: cooldownStart } },
+            {
+              soldAt: { $exists: false },
+              updatedAt: { $gte: cooldownStart },
+            },
+          ],
         },
       ],
     })
@@ -130,12 +141,16 @@ const assertCustomerSellLimit = async ({
   const previousSales = await leads.countDocuments({
     _id: { $ne: lead._id },
     customerIdentityHash,
-    is_selled: true,
-    $or: [
-      { soldAt: { $gte: windowStart } },
+    $and: [
+      SOLD_OR_PAYMENT_PENDING,
       {
-        soldAt: { $exists: false },
-        createdAt: { $gte: windowStart },
+        $or: [
+          { soldAt: { $gte: windowStart } },
+          {
+            soldAt: { $exists: false },
+            createdAt: { $gte: windowStart },
+          },
+        ],
       },
     ],
   })
