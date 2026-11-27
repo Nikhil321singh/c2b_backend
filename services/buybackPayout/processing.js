@@ -3,31 +3,51 @@ import leads from '../../models/leadsModel.js'
 import { sendPayoutSuccessNotification } from '../payoutNotificationService.js'
 import { decryptPII } from '../../utils/kmsEncryption.js'
 import { safeLog } from '../../utils/piiMasking.js'
-import { PayoutBusinessError, classifyBankEnquiryFailure } from './validation.js'
+import {
+  PayoutBusinessError,
+  classifyBankEnquiryFailure,
+  LEAD_PAYOUT_REJECTED_STATUS,
+} from './validation.js'
 
 const PAYMENT_SUCCESS_MESSAGE = 'Payment completed successfully.'
 
-const syncLeadStatus = (payout) =>
-  leads.findByIdAndUpdate(payout.leadId, {
-    payoutStatus: payout.status,
-    ...(payout.status === PAYOUT_STATUS.SUCCESS
-      ? {
-          // Same final lead status as the manual store-payment flow.
-          status: 'Completed',
-          $push: {
-            history: {
-              action: 'HSBC UPI payout completed',
-              performedBy: payout.paymentClaimedBy,
-              changes: {
-                payoutId: payout._id,
-                amount: payout.amount,
-                rrn: payout.providerTransactionRrn,
-              },
-            },
+// With an HSBC payout the lead is sold only once the customer is paid. Until
+// then it stays unsold with status "Payment Pending" (set at Sell).
+export const buildLeadPayoutUpdate = (payout) => {
+  if (payout.status === PAYOUT_STATUS.SUCCESS) {
+    return {
+      payoutStatus: payout.status,
+      is_selled: true,
+      soldAt: payout.paidAt || new Date(),
+      // Same final lead status as the manual store-payment flow.
+      status: 'Completed',
+      $push: {
+        history: {
+          action: 'HSBC UPI payout completed',
+          performedBy: payout.paymentClaimedBy,
+          changes: {
+            payoutId: payout._id,
+            amount: payout.amount,
+            rrn: payout.providerTransactionRrn,
           },
-        }
-      : {}),
-  })
+        },
+      },
+    }
+  }
+  if (payout.status === PAYOUT_STATUS.REJECTED) {
+    // A rejected payout is final: the device was not bought.
+    return {
+      payoutStatus: payout.status,
+      is_selled: false,
+      status: LEAD_PAYOUT_REJECTED_STATUS,
+      $unset: { soldAt: '' },
+    }
+  }
+  return { payoutStatus: payout.status }
+}
+
+const syncLeadStatus = (payout) =>
+  leads.findByIdAndUpdate(payout.leadId, buildLeadPayoutUpdate(payout))
 
 const applyProviderResult = async (payout, result) => {
   payout.providerResponseCode = result.respCode || ''
