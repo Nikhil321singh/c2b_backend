@@ -405,8 +405,6 @@ const reconcilePayout = async (payout) => {
   await completeReceipt(payout)
 }
 
-export const findPayoutForLead = (leadId) => BuybackPayout.findOne({ leadId })
-
 export const createPayoutForPurchase = async ({
   lead,
   initiatedBy,

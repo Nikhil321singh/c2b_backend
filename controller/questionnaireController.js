@@ -66,11 +66,9 @@ import { buildToUpdate } from './questionnaireHelpers.js'
 import {
   PayoutBusinessError,
   createPayoutForPurchase,
-  findPayoutForLead,
   getPayoutModeForStore,
   validatePayoutEligibility,
 } from '../services/buybackPayoutService.js'
-import { LEAD_PAYMENT_PENDING_STATUS } from '../services/buybackPayout/validation.js'
 
 const create = async (req, res) => {
   try {
@@ -539,43 +537,6 @@ const prepareLeadForSale = async (lead, body) => {
   return { negotiationError, payoutAmount }
 }
 
-// Fields saved on the lead at Sell. A manual sale is sold straight away. With
-// an HSBC payout the lead is NOT sold yet: it waits as "Payment Pending" and
-// becomes sold only when the payment succeeds (see buildLeadPayoutUpdate).
-// Pure.
-export const buildSaleLeadUpdate = (lead, { isHsbcPayout, payoutAmount }) => ({
-  price: lead.price,
-  bonusPrice: lead.bonusPrice,
-  slabBonusAmount: lead.slabBonusAmount,
-  negotiatedAmount: lead.negotiatedAmount,
-  slabApplied: lead.slabApplied,
-  couponDiscount: lead.couponDiscount,
-  exactValue: lead.exactValue,
-  quotedPrice: lead.quotedPrice,
-  actualPrice: lead.actualPrice,
-  tncVersion: lead.tncVersion,
-  ...(isHsbcPayout
-    ? { is_selled: false, status: LEAD_PAYMENT_PENDING_STATUS, payoutAmount }
-    : { is_selled: true, soldAt: lead.soldAt }),
-})
-
-// The Sell response for an HSBC payout (new, or one created earlier). Pure.
-export const buildPayoutSaleResponse = (lead, payout, { paymentLink, notificationDelivered, message }) => ({
-  success: true,
-  data: lead.modelId,
-  id: lead._id,
-  payout: {
-    id: payout._id,
-    amount: payout.amount,
-    status: payout.status,
-    statusMessage: payout.statusMessage,
-    approvalRequired: payout.approval?.required === true,
-    paymentLink,
-    notificationDelivered,
-  },
-  message,
-})
-
 const buildPayoutNotificationMessage = (notification) => {
   if (notification.pendingUserAction) {
     return 'Payout is ready. Click Pay Now to send the customer payment link.'
@@ -585,9 +546,6 @@ const buildPayoutNotificationMessage = (notification) => {
   }
   return 'Payout link created, but notification delivery failed.'
 }
-
-// MongoDB's duplicate key error: the lead already has a payout.
-const DUPLICATE_KEY_ERROR = 11000
 
 const createPayoutForPurchaseWithRollback = async ({
   lead,
@@ -605,21 +563,9 @@ const createPayoutForPurchaseWithRollback = async ({
       amount,
     })
   } catch (error) {
-    // Two Sell clicks at the same moment: the other request created the
-    // payout first (one payout per lead). Keep the lead and show that payout.
-    if (error?.code === DUPLICATE_KEY_ERROR) {
-      const existing = await findPayoutForLead(lead._id)
-      if (existing) {
-        return {
-          payout: existing,
-          paymentLink: null,
-          notification: { delivered: false, reason: 'Payout already exists' },
-        }
-      }
-    }
-    // The lead is updated (Payment Pending) before the payout exists. Without
-    // this rollback a failed payout leaves a lead marked Payment Pending with
-    // nothing to pay it.
+    // The lead is marked sold before the payout exists. Without this
+    // rollback a failed payout leaves a sold lead with nothing to pay it,
+    // and the is_selled guard above rejects every retry as "Item sold out".
     await leads.findByIdAndUpdate(
       lead._id,
       buildSaleRollback(previousStatus),
@@ -680,20 +626,6 @@ const itemPurchased = async (req, res) => {
         .json({ success: true, message: 'Item sold out', data: leadFromDb })
     }
 
-    // The lead already has an HSBC payout (e.g. the user pressed Back or
-    // refreshed and clicked Sell again): show that payout. Nothing is
-    // re-priced or created again.
-    const existingPayout = await findPayoutForLead(leadFromDb._id)
-    if (existingPayout) {
-      return res.status(200).json(
-        buildPayoutSaleResponse(leadFromDb, existingPayout, {
-          paymentLink: null,
-          notificationDelivered: existingPayout.linkNotificationState === 'DELIVERED',
-          message: `A payout already exists for this device. ${existingPayout.statusMessage || ''}`.trim(),
-        }),
-      )
-    }
-
     const lead = await decryptPIIFields(leadFromDb, PII_FIELDS_TO_ENCRYPT)
     safeLog.info('Decrypted lead for invoice generation')
 
@@ -727,7 +659,23 @@ const itemPurchased = async (req, res) => {
       })
     }
 
-    const leadUpdate = buildSaleLeadUpdate(lead, { isHsbcPayout, payoutAmount })
+    const leadUpdate = {
+      price: lead.price,
+      bonusPrice: lead.bonusPrice,
+      slabBonusAmount: lead.slabBonusAmount,
+      negotiatedAmount: lead.negotiatedAmount,
+      slabApplied: lead.slabApplied,
+      couponDiscount: lead.couponDiscount,
+      exactValue: lead.exactValue,
+      quotedPrice: lead.quotedPrice,
+      actualPrice: lead.actualPrice,
+      is_selled: lead.is_selled,
+      soldAt: lead.soldAt,
+      tncVersion: lead.tncVersion,
+      ...(isHsbcPayout
+        ? { status: 'Payment Pending', payoutAmount }
+        : {}),
+    }
 
     if (isHsbcPayout) {
       const payoutResult = await createPayoutForPurchaseWithRollback({
@@ -737,13 +685,22 @@ const itemPurchased = async (req, res) => {
         previousStatus: leadFromDb.status,
         leadUpdate,
       })
-      return res.status(200).json(
-        buildPayoutSaleResponse(lead, payoutResult.payout, {
+      return res.status(200).json({
+        success: true,
+        data: lead.modelId,
+        id: lead._id,
+        payout: {
+          id: payoutResult.payout._id,
+          amount: payoutResult.payout.amount,
+          status: payoutResult.payout.status,
+          statusMessage: payoutResult.payout.statusMessage,
+          approvalRequired: payoutResult.payout.approval.required,
           paymentLink: payoutResult.paymentLink,
-          notificationDelivered: payoutResult.notification.delivered,
-          message: buildPayoutNotificationMessage(payoutResult.notification),
-        }),
-      )
+          notificationDelivered:
+            payoutResult.notification.delivered,
+        },
+        message: buildPayoutNotificationMessage(payoutResult.notification),
+      })
     }
 
     const signatureUrl = lead.documentId?.signature
@@ -1028,8 +985,6 @@ const calculatePriceWatch = async (req, res) => {
       modelId,
       userId: req.userId,
       is_selled: false,
-      // Never re-quote (overwrite) a lead that has an HSBC payout.
-      payoutId: null,
     }
     const obj = {
       QNA,

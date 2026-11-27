@@ -370,9 +370,6 @@ export const buildQueryParam = (phoneNumber, modelId, storage, ram, userId) => {
     ...(storage && { storage }),
     ...(ram && { ram }),
     is_selled: false,
-    // A lead with an HSBC payout (pending or rejected) is not sold, but it
-    // must never be re-quoted and overwritten.
-    payoutId: null,
   }
 }
 
