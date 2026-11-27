@@ -186,7 +186,12 @@ const getUserWithRole = async (userId) => {
  * and whether we're fetching history or active lists.
  */
 const getMatchCriteria = (queryRole = DEFAULT_USER_ROLE, isHistory = false) => {
-  const legacyLotOnly = { paymentStatus: { $exists: false } }
+  // Lots sent from Customer Payouts go straight to Logistics and are not
+  // handled on the Pickup & Cancel screen.
+  const legacyLotOnly = {
+    paymentStatus: { $exists: false },
+    source: { $ne: 'PAYOUT' },
+  }
   if (isHistory) {
     return queryRole === DEFAULT_USER_ROLE
       ? { status: DELIVERY_AT_WAREHOUSE, ...legacyLotOnly }

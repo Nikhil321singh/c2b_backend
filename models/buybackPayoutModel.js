@@ -186,6 +186,14 @@ const buybackPayoutSchema = new Schema(
       default: 'NOT_SENT',
     },
     successNotificationLastAttemptAt: Date,
+    // Hand-off of the bought device to the logistics team after payment.
+    logistics: {
+      lotId: { type: Schema.Types.ObjectId, ref: 'devicesLot' },
+      lotCode: String,
+      assignedAt: Date,
+      assignedBy: { type: Schema.Types.ObjectId, ref: 'users' },
+      remarks: String,
+    },
   },
   { timestamps: true },
 )

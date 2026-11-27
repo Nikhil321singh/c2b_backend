@@ -50,6 +50,7 @@ const listSchema = Joi.object({
   storeIds: idList.allow(''),
   lotNo: Joi.string().trim().max(50).allow(''),
   status: Joi.string().valid(...Object.values(LOGISTICS_STATUS)).allow(''),
+  source: Joi.string().valid('MANUAL', 'PAYOUT').allow(''),
   fromDate: Joi.date(),
   toDate: Joi.date().min(Joi.ref('fromDate')),
 })
@@ -151,6 +152,12 @@ const buildLotMatch = (query) => {
   }
   if (query.lotNo) {
     lotMatch.uniqueCode = { $regex: escapeRegex(query.lotNo), $options: 'i' }
+  }
+  // Older lots carry no source and count as manual.
+  if (query.source === 'PAYOUT') {
+    lotMatch.source = 'PAYOUT'
+  } else if (query.source === 'MANUAL') {
+    lotMatch.source = { $ne: 'PAYOUT' }
   }
   return lotMatch
 }
@@ -295,6 +302,11 @@ const LIST_PROJECTION = {
   lotUpdatedAt: '$updatedAt',
   paymentReceipt: { $ifNull: ['$paymentReceipt', ''] },
   paymentRemarks: { $ifNull: ['$remarks', ''] },
+  // MANUAL: raised from the store / pickup flow. PAYOUT: customer paid via
+  // HSBC and sent from Customer Payouts.
+  source: { $ifNull: ['$source', 'MANUAL'] },
+  paymentReference: { $ifNull: ['$paymentReference', ''] },
+  paidAt: { $ifNull: ['$paidAt', null] },
   deviceName: { $ifNull: ['$model.name', ''] },
   ram: { $ifNull: ['$lead.ram', ''] },
   storage: { $ifNull: ['$lead.storage', ''] },

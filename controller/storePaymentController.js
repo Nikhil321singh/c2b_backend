@@ -8,6 +8,7 @@ import {
   unflagStorePayment,
 } from '../services/storePaymentService.js'
 import { safeLog } from '../utils/piiMasking.js'
+import s3Controller from './s3.controller.js'
 
 const sendError = (res, error) => {
   if (error instanceof StorePaymentError) {
@@ -107,6 +108,8 @@ const markPaid = async (req, res) => {
       paymentReference: req.body.paymentReference,
       paymentReceipt: req.body.paymentReceipt,
       remarks: req.body.remarks,
+      receiptFile: req.file,
+      uploadReceipt: (file) => s3Controller.uploadFileBuffer(file),
     })
     return res.json({
       success: true,

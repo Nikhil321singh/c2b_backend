@@ -27,3 +27,4 @@ export {
   applyStatusNotification,
   reconcileIncompletePayouts,
 } from './buybackPayout/operations.js'
+export { assignPayoutToLogistics } from './buybackPayout/logistics.js'

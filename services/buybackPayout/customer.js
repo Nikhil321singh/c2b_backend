@@ -20,6 +20,7 @@ import {
   ROLE_COMPANY_ADMIN,
   ROLE_MANAGER,
   ROLE_ADMIN_MANAGER,
+  ROLE_ACCOUNTS_USER,
 } from './validation.js'
 import { syncLeadStatus } from './processing.js'
 
@@ -58,7 +59,10 @@ const notifyPayoutApprovers = async (payout) => {
     status: true,
     $or: [
       { role: ROLE_SUPER_ADMIN },
-      { role: ROLE_COMPANY_ADMIN, companyId: payout.companyId },
+      {
+        role: { $in: [ROLE_COMPANY_ADMIN, ROLE_ACCOUNTS_USER] },
+        companyId: payout.companyId,
+      },
       {
         role: { $in: [ROLE_MANAGER, ROLE_ADMIN_MANAGER] },
         companyId: payout.companyId,

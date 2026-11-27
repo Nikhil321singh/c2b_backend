@@ -9,6 +9,7 @@ import {
   getPayoutForUser,
   listPayoutsForUser,
   resendPayoutLink,
+  assignPayoutToLogistics,
 } from '../services/buybackPayoutService.js'
 import {
   HsbcUpiConfigurationError,
@@ -182,6 +183,24 @@ const pay = async (req, res) => {
   }
 }
 
+const sendToLogistics = async (req, res) => {
+  try {
+    disablePaymentStateCaching(res)
+    const data = await assignPayoutToLogistics({
+      payoutId: req.params.id,
+      actorId: req.userId,
+      remarks: req.body?.remarks,
+    })
+    return res.json({
+      success: true,
+      message: `Sent to logistics in ${data.logistics?.lotCode || 'a new lot'}`,
+      data,
+    })
+  } catch (error) {
+    return sendError(res, error)
+  }
+}
+
 const refreshStatus = async (req, res) => {
   try {
     disablePaymentStateCaching(res)
@@ -241,5 +260,6 @@ export default {
   pay,
   refreshStatus,
   resendLink,
+  sendToLogistics,
   configurationStatus,
 }
