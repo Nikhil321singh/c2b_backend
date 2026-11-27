@@ -18,7 +18,6 @@ export {
 } from './buybackPayout/customer.js'
 export {
   createPayoutForPurchase,
-  findPayoutForLead,
   approvePayout,
   resendPayoutLink,
   makePayout,

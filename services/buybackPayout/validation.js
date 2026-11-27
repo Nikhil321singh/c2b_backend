@@ -9,11 +9,6 @@ const ROLE_ADMIN_MANAGER = 'Admin Manager'
 // own company (list, approve / reject, pay, send to logistics). The company
 // check in access.js keeps them out of other companies.
 const ROLE_ACCOUNTS_USER = 'Accounts User'
-
-// Lead status while its HSBC payout is pending. With an HSBC payout the lead
-// is NOT sold yet; it becomes sold only when the payment succeeds.
-export const LEAD_PAYMENT_PENDING_STATUS = 'Payment Pending'
-export const LEAD_PAYOUT_REJECTED_STATUS = 'Payout Rejected'
 const ADMIN_ROLES = new Set([
   ROLE_SUPER_ADMIN,
   ROLE_COMPANY_ADMIN,
