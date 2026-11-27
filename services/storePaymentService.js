@@ -421,9 +421,25 @@ const applyRequestFilters = async (filter, query) => {
   if (query.requestsOnly === 'true') {
     filter.paymentMode = { $exists: true }
   }
+  // Lot code, store name or exact amount, over every request the user may see.
   const search = String(query.search || '').trim()
   if (search) {
-    filter.uniqueCode = { $regex: escapeRegex(search.slice(0, 50)), $options: 'i' }
+    const pattern = { $regex: escapeRegex(search.slice(0, 50)), $options: 'i' }
+    const matchedStores = await storeModel
+      .find({ storeName: pattern })
+      .select('_id')
+      .limit(500)
+      .lean()
+    // "₹1,500" or "1500" also finds requests of exactly that amount.
+    const amountText = search.replace(/[₹,\s]/g, '')
+    const amount = Number(amountText)
+    filter.$or = [
+      { uniqueCode: pattern },
+      ...(amountText && Number.isFinite(amount) ? [{ totalAmount: amount }] : []),
+      ...(matchedStores.length
+        ? [{ storeId: { $in: matchedStores.map((store) => store._id) } }]
+        : []),
+    ]
   }
   if (query.fromDate || query.toDate) {
     if (!isValidDate(query.fromDate) || !isValidDate(query.toDate)) {
