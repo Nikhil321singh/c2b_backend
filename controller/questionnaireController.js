@@ -390,8 +390,6 @@ const generateInvoicePdfs = async (
     },
   )
 
-  const customerPdfBuffer = await createPdfBuffer(customerHtmlContent)
-
   const storeHtmlContent = generateInvoiceHtml(
     customerHtmlTemplate,
     lead,
@@ -403,7 +401,11 @@ const generateInvoicePdfs = async (
       showBonusOffer: isSangeeta,
     },
   )
-  const storePdfBuffer = await createPdfBuffer(storeHtmlContent)
+  // Both PDFs are built at the same time; each takes a few seconds.
+  const [customerPdfBuffer, storePdfBuffer] = await Promise.all([
+    createPdfBuffer(customerHtmlContent),
+    createPdfBuffer(storeHtmlContent),
+  ])
 
   return { customerPdfBuffer, storePdfBuffer }
 }
@@ -587,6 +589,19 @@ const uploadReceiptPdf = async (isSangeeta, storePdfBuffer, lead) => {
   return uploadPdfToS3(storePdfBuffer, lead.uniqueCode)
 }
 
+// Receipt emails go out after the sale has been answered, so a slow or
+// blocked mail server cannot hold the Sell button. A failure is logged only;
+// the sale is already saved.
+export const sendReceiptsInBackground = (send) => {
+  Promise.resolve()
+    .then(send)
+    .catch((error) => {
+      safeLog.error('Receipt emails failed after sale:', {
+        error: error?.message,
+      })
+    })
+}
+
 const getErrorStatusCode = (error) => {
   if (error instanceof PayoutBusinessError) {
     return error.statusCode
@@ -712,14 +727,16 @@ const itemPurchased = async (req, res) => {
       reciept: receiptUrl,
     })
 
-    await sendEmailsWithErrorHandling(lead, customerPdfBuffer, storePdfBuffer)
-
-    return res.status(200).json({
+    const response = res.status(200).json({
       data: lead.modelId,
       id: lead._id,
       message:
         'Item Sold Successfully. Receipt will be sent to your email shortly.',
     })
+    sendReceiptsInBackground(() =>
+      sendEmailsWithErrorHandling(lead, customerPdfBuffer, storePdfBuffer),
+    )
+    return response
   } catch (error) {
     safeLog.error('Error in itemPurchased:', error)
     return res
