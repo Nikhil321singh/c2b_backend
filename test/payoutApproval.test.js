@@ -165,6 +165,35 @@ describe('Payout approval: approve', () => {
     expect(calls.notifications[0].title).to.equal('Customer payout approved')
   })
 
+  it('Accounts User can approve any store of their company', async () => {
+    const { payout, actor } = setup({ actor: user('Accounts User') })
+    const result = await approvePayout({ payoutId: String(payout._id), actorId: String(actor._id), approved: true })
+    expect(result.status).to.equal(PAYOUT_STATUS.READY_FOR_PAYMENT)
+  })
+
+  it('Accounts User of another company cannot approve', async () => {
+    const { payout, actor } = setup({ actor: user('Accounts User', { companyId: oid() }) })
+    await expectRefused(
+      approvePayout({ payoutId: String(payout._id), actorId: String(actor._id), approved: true }),
+      403,
+      /Access denied/,
+    )
+  })
+
+  it('Accounts User passes the payer check for Make Payment', async () => {
+    const ready = pendingPayout({ status: PAYOUT_STATUS.READY_FOR_PAYMENT })
+    const accounts = user('Accounts User')
+    setup({ payout: ready, actor: accounts })
+    // The payer check passes; the next guard (no lock taken in the fake) is
+    // what stops this offline test, proving the role is allowed to pay.
+    fake(BuybackPayout, 'findOneAndUpdate', () => chain(null))
+    await expectRefused(
+      makePayout({ payoutId: String(ready._id), actorId: String(accounts._id) }),
+      409,
+      /already being processed/,
+    )
+  })
+
   it('Super Admin can approve', async () => {
     const { payout, actor } = setup({ actor: user('Super Admin', { companyId: oid() }) })
     const result = await approvePayout({ payoutId: String(payout._id), actorId: String(actor._id), approved: true })
@@ -253,7 +282,7 @@ describe('Payout approval: refused cases', () => {
     })
   }
 
-  for (const role of ['Sale User', 'Accounts User', 'Technician', 'Store Admin']) {
+  for (const role of ['Sale User', 'Technician', 'Store Admin']) {
     it(`${role} cannot approve`, async () => {
       const { payout, actor, calls } = setup({ actor: user(role, { storeId }) })
       await expectRefused(
@@ -331,5 +360,68 @@ describe('Lead status after a customer payout', () => {
       expect(update, status).to.not.have.property('status')
       restoreAll()
     }
+  })
+})
+
+describe('Accounts User: every store of their company (Customer Payouts)', () => {
+  afterEach(restoreAll)
+
+  const listFilterFor = async (actor) => {
+    const { listPayoutsForUser } = await import('../services/buybackPayoutService.js')
+    let filter
+    const query = {
+      populate: () => query,
+      sort: () => query,
+      skip: () => query,
+      limit: () => query,
+      lean: async () => [],
+    }
+    fake(UsersModel, 'findById', () => chain(actor))
+    fake(BuybackPayout, 'find', (f) => {
+      filter = f
+      return query
+    })
+    fake(BuybackPayout, 'countDocuments', async () => 0)
+    await listPayoutsForUser({ actorId: String(actor._id), query: {} })
+    return filter
+  }
+
+  it('lists payouts of all stores of the company, not only their own', async () => {
+    const filter = await listFilterFor(user('Accounts User'))
+    expect(String(filter.companyId)).to.equal(String(companyId))
+    expect(filter).to.not.have.property('storeId')
+    expect(filter).to.not.have.property('initiatedBy')
+  })
+
+  it('a store on the Accounts User profile does not narrow the list', async () => {
+    const filter = await listFilterFor(user('Accounts User', { storeId: oid(), assignedStores: [oid()] }))
+    expect(filter).to.not.have.property('storeId')
+  })
+
+  it('compared with a Manager, who is limited to assigned stores', async () => {
+    const filter = await listFilterFor(user('Manager', { storeId }))
+    expect(filter.storeId.$in.map(String)).to.deep.equal([String(storeId)])
+  })
+
+  it('can approve payouts from two different stores of the company', async () => {
+    for (const payoutStore of [oid(), oid()]) {
+      const { payout, actor } = setup({ payout: pendingPayout({ storeId: payoutStore }), actor: user('Accounts User') })
+      const result = await approvePayout({ payoutId: String(payout._id), actorId: String(actor._id), approved: true })
+      expect(result.status, String(payoutStore)).to.equal(PAYOUT_STATUS.READY_FOR_PAYMENT)
+      restoreAll()
+    }
+  })
+
+  it('an Accounts User from another company sees and approves nothing', async () => {
+    const outsider = user('Accounts User', { companyId: oid() })
+    const filter = await listFilterFor(outsider)
+    expect(String(filter.companyId)).to.not.equal(String(companyId))
+    restoreAll()
+    const { payout } = setup({ actor: outsider })
+    await expectRefused(
+      approvePayout({ payoutId: String(payout._id), actorId: String(outsider._id), approved: true }),
+      403,
+      /Access denied/,
+    )
   })
 })

@@ -78,6 +78,12 @@ const loadActor = async (actorId) => {
   if (!actor || actor.status === false) {
     throw new StorePaymentError('User account is unavailable', 403)
   }
+  // Store payments are company data. A user without a company (other than
+  // Super Admin) is refused outright; otherwise an empty company would match
+  // every lot that has no company either (older pickup lots).
+  if (actor.role !== ROLES.SUPER_ADMIN && !actor.companyId) {
+    throw new StorePaymentError('Your account is not linked to a company', 403)
+  }
   return actor
 }
 

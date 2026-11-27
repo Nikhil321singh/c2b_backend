@@ -228,6 +228,12 @@ describe('Payout -> logistics: positive scenarios', () => {
     expect(calls.created).to.have.length(1)
   })
 
+  it('Accounts User of the company can send it (any store)', async () => {
+    const { payout, actor, calls } = setup({ actor: makeActor('Accounts User') })
+    await assignPayoutToLogistics({ payoutId: String(payout._id), actorId: String(actor._id) })
+    expect(calls.created).to.have.length(1)
+  })
+
   it('Admin Manager of the company can send it', async () => {
     const { payout, actor, calls } = setup({ actor: makeActor('Admin Manager') })
     await assignPayoutToLogistics({ payoutId: String(payout._id), actorId: String(actor._id) })
@@ -352,7 +358,7 @@ describe('Payout -> logistics: negative scenarios', () => {
   })
 
   it('rejects roles that have no part in this flow (403)', async () => {
-    for (const role of ['Accounts User', 'Technician', 'Store Admin', 'Logistics Admin']) {
+    for (const role of ['Technician', 'Store Admin', 'Logistics Admin']) {
       const { payout, actor, calls } = setup({ actor: makeActor(role, { storeId }) })
       await expectBusinessError(
         assignPayoutToLogistics({ payoutId: String(payout._id), actorId: String(actor._id) }),
@@ -600,3 +606,34 @@ describe('User erasure keeps payout lots', () => {
     expect(request.status).to.equal('COMPLETED')
   })
 })
+
+describe('Accounts User: Send to Logistics for any store of their company', () => {
+  afterEach(restoreAll)
+
+  it('works for payouts of different stores of the same company', async () => {
+    for (const payoutStore of [storeId, otherStoreId]) {
+      const actor = makeActor('Accounts User')
+      const { payout, calls } = setup({ payout: makePayout({ storeId: payoutStore }), actor })
+      await assignPayoutToLogistics({ payoutId: String(payout._id), actorId: String(actor._id) })
+      expect(calls.created, String(payoutStore)).to.have.length(1)
+      expect(String(calls.created[0].storeId)).to.equal(String(payoutStore))
+      restoreAll()
+    }
+  })
+
+  it('is refused for a payout of another company', async () => {
+    const { payout, actor, calls } = setup({ actor: makeActor('Accounts User', { companyId: oid() }) })
+    await expectRefused403(assignPayoutToLogistics({ payoutId: String(payout._id), actorId: String(actor._id) }))
+    expect(calls.created).to.have.length(0)
+  })
+})
+
+async function expectRefused403(promise) {
+  try {
+    await promise
+  } catch (error) {
+    expect(error.statusCode).to.equal(403)
+    return
+  }
+  throw new Error('Expected 403')
+}

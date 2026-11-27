@@ -5,16 +5,22 @@ const ROLE_SUPER_ADMIN = 'Super Admin'
 const ROLE_COMPANY_ADMIN = 'Company Admin'
 const ROLE_MANAGER = 'Manager'
 const ROLE_ADMIN_MANAGER = 'Admin Manager'
+// Accounts users have full Customer Payouts access for every store of their
+// own company (list, approve / reject, pay, send to logistics). The company
+// check in access.js keeps them out of other companies.
+const ROLE_ACCOUNTS_USER = 'Accounts User'
 const ADMIN_ROLES = new Set([
   ROLE_SUPER_ADMIN,
   ROLE_COMPANY_ADMIN,
   ROLE_ADMIN_MANAGER,
+  ROLE_ACCOUNTS_USER,
 ])
 const APPROVER_ROLES = new Set([
   ROLE_SUPER_ADMIN,
   ROLE_COMPANY_ADMIN,
   ROLE_MANAGER,
   ROLE_ADMIN_MANAGER,
+  ROLE_ACCOUNTS_USER,
 ])
 const UPI_VPA_PATTERN = /^[a-zA-Z0-9._-]{2,256}@[a-zA-Z][a-zA-Z0-9.-]{1,63}$/
 const IFSC_PATTERN = /^[A-Z]{4}0[A-Z0-9]{6}$/
@@ -212,6 +218,7 @@ export {
   ROLE_COMPANY_ADMIN,
   ROLE_MANAGER,
   ROLE_ADMIN_MANAGER,
+  ROLE_ACCOUNTS_USER,
   ADMIN_ROLES,
   APPROVER_ROLES,
   UPI_VPA_PATTERN,
