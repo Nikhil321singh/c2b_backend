@@ -5,6 +5,7 @@ import mongoose from 'mongoose'
 import BuybackPayout, { PAYOUT_STATUS } from '../models/buybackPayoutModel.js'
 import leads from '../models/leadsModel.js'
 import UsersModel from '../models/UsersModel.js'
+import storeModel from '../models/storeModel.js'
 import notificationModel from '../models/notificationModel.js'
 import {
   approvePayout,
@@ -19,6 +20,7 @@ const chain = (value) => {
   const query = {
     select: () => query,
     populate: () => query,
+    limit: () => query,
     lean: () => query,
     then: (resolve, reject) => Promise.resolve(value).then(resolve, reject),
   }
@@ -423,5 +425,104 @@ describe('Accounts User: every store of their company (Customer Payouts)', () =>
       403,
       /Access denied/,
     )
+  })
+})
+
+describe('Customer Payouts list: paging and search over all records', () => {
+  afterEach(restoreAll)
+
+  // Runs the list with fakes; returns the payout filter, skip/limit and result.
+  const runList = async (actor, query, { leadRows = [], storeRows = [], userRows = [], total = 0 } = {}) => {
+    const { listPayoutsForUser } = await import('../services/buybackPayoutService.js')
+    const seen = {}
+    const payoutQuery = {
+      populate: () => payoutQuery,
+      sort: () => payoutQuery,
+      skip: (n) => {
+        seen.skip = n
+        return payoutQuery
+      },
+      limit: (n) => {
+        seen.limit = n
+        return payoutQuery
+      },
+      lean: async () => [],
+    }
+    fake(UsersModel, 'findById', () => chain(actor))
+    fake(UsersModel, 'find', (f) => {
+      seen.userQuery = f
+      return chain(userRows)
+    })
+    fake(leads, 'find', (f) => {
+      seen.leadQuery = f
+      return chain(leadRows)
+    })
+    fake(storeModel, 'find', () => chain(storeRows))
+    fake(BuybackPayout, 'find', (f) => {
+      seen.filter = f
+      return payoutQuery
+    })
+    fake(BuybackPayout, 'countDocuments', async () => total)
+    const result = await listPayoutsForUser({ actorId: String(actor._id), query })
+    return { ...seen, result }
+  }
+
+  it('no search: no $or and no extra lookups', async () => {
+    const { filter, leadQuery } = await runList(user('Company Admin'), {})
+    expect(filter).to.not.have.property('$or')
+    expect(leadQuery).to.equal(undefined)
+  })
+
+  it('page 3 of 20 skips 40 rows and returns the total for the pager', async () => {
+    const { skip, limit, result } = await runList(user('Company Admin'), { page: '3', limit: '20' }, { total: 86 })
+    expect(skip).to.equal(40)
+    expect(limit).to.equal(20)
+    expect(result).to.include({ total: 86, page: 3, limit: 20 })
+  })
+
+  it('caps the page size at 100 and treats a bad page as page 1', async () => {
+    const { skip, limit } = await runList(user('Company Admin'), { page: '-4', limit: '5000' })
+    expect(limit).to.equal(100)
+    expect(skip).to.equal(0)
+  })
+
+  it('search matches lead code, store, initiator and payout fields', async () => {
+    const leadId = oid()
+    const matchedStore = oid()
+    const initiator = oid()
+    const { filter } = await runList(user('Company Admin'), { search: 'grunipas' }, {
+      leadRows: [{ _id: leadId }],
+      storeRows: [{ _id: matchedStore }],
+      userRows: [{ _id: initiator }],
+    })
+    const fields = filter.$or.map((clause) => Object.keys(clause)[0])
+    expect(fields).to.include.members([
+      'merchantOrderNo', 'providerTransactionRrn', 'providerResponseCode', 'status',
+      'provider', 'beneficiaryAccountMasked', 'beneficiaryVpaMasked', 'leadId', 'storeId', 'initiatedBy',
+    ])
+    expect(filter.$or.find((c) => c.leadId).leadId.$in).to.deep.equal([leadId])
+  })
+
+  it('search text is escaped, trimmed and capped at 50 characters', async () => {
+    const { leadQuery } = await runList(user('Company Admin'), { search: `  a.*(b${'x'.repeat(80)}  ` })
+    const pattern = leadQuery.uniqueCode.$regex
+    // Special characters are escaped, so they match literally.
+    expect(pattern.startsWith(String.raw`a\.\*\(b`)).to.equal(true)
+    expect(new RegExp(pattern).test(`a.*(b${'x'.repeat(45)}`)).to.equal(true)
+    expect(new RegExp(pattern).test(`aZZZb${'x'.repeat(45)}`)).to.equal(false)
+    // 50 typed characters (the escape backslashes are not counted).
+    expect(pattern.split('\\').join('')).to.have.length(50)
+    expect(leadQuery.uniqueCode.$options).to.equal('i')
+  })
+
+  it('search keeps the company scope (never shows another company)', async () => {
+    const { filter } = await runList(user('Accounts User'), { search: 'store' }, { storeRows: [{ _id: oid() }] })
+    expect(String(filter.companyId)).to.equal(String(companyId))
+  })
+
+  it('search keeps a Manager limited to assigned stores', async () => {
+    const { filter } = await runList(user('Manager', { storeId }), { search: 'store' }, { storeRows: [{ _id: oid() }] })
+    expect(filter.storeId.$in.map(String)).to.deep.equal([String(storeId)])
+    expect(filter.$or.length).to.be.greaterThan(0)
   })
 })

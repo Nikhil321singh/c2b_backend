@@ -93,7 +93,47 @@ describe('Store Requests: list filters', () => {
 
   it('lot search is a safe, case-insensitive contains match', async () => {
     const { filter } = await run(admin(), { search: ' PAY-17(86 ' })
-    expect(filter.uniqueCode).to.deep.equal({ $regex: 'PAY-17\\(86', $options: 'i' })
+    expect(filter.$or).to.deep.equal([{ uniqueCode: { $regex: 'PAY-17\\(86', $options: 'i' } }])
+  })
+
+  it('search also matches requests of stores whose name matches', async () => {
+    const storeId = oid()
+    const { filter } = await run(admin(), { search: 'payout at' }, { stores: [{ _id: storeId }] })
+    expect(filter.$or).to.have.length(2)
+    expect(filter.$or[1].storeId.$in.map(String)).to.deep.equal([String(storeId)])
+    // The company scope still applies on top of the search.
+    expect(filter.companyId).to.equal(companyId)
+  })
+
+  it('search never widens a Manager beyond their own stores', async () => {
+    const own = oid()
+    const manager = { _id: oid(), role: 'Manager', companyId, storeId: own, assignedStores: [] }
+    const { filter } = await run(manager, { search: 'store' }, { stores: [{ _id: oid() }] })
+    expect(filter.storeId.$in.map(String)).to.deep.equal([String(own)])
+    expect(filter.$or).to.have.length(2)
+  })
+
+  it('passes page and limit through and caps the page size at 100', async () => {
+    let skipped
+    let limited
+    fake(UsersModel, 'findById', () => chain({ status: true, ...admin() }))
+    fake(devicesLot, 'find', () => {
+      const query = chain([])
+      query.skip = (n) => {
+        skipped = n
+        return query
+      }
+      query.limit = (n) => {
+        limited = n
+        return query
+      }
+      return query
+    })
+    fake(devicesLot, 'countDocuments', async () => 164)
+    const result = await listStorePayments({ actorId: String(oid()), query: { page: '2', limit: '500' } })
+    expect(limited).to.equal(100)
+    expect(skipped).to.equal(200)
+    expect(result).to.include({ total: 164, page: 2, limit: 100 })
   })
 
   it('date range covers the whole of both days', async () => {

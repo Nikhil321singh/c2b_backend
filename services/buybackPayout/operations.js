@@ -2,6 +2,8 @@ import crypto from 'crypto'
 import mongoose from 'mongoose'
 import BuybackPayout, { PAYOUT_STATUS } from '../../models/buybackPayoutModel.js'
 import leads from '../../models/leadsModel.js'
+import storeModel from '../../models/storeModel.js'
+import UsersModel from '../../models/UsersModel.js'
 import { decryptPII } from '../../utils/kmsEncryption.js'
 import { safeLog } from '../../utils/piiMasking.js'
 import {
@@ -300,6 +302,44 @@ const buildPayoutListFilter = (actor, query, actorId) => {
     }
   }
   return filter
+}
+
+// Search runs over every payout the user may see, not only the loaded page:
+// lead code, store name, initiator name/email, HSBC order number, RRN, HSBC
+// code, status, payment mode and the masked account / UPI ID. The role scope
+// set by buildPayoutListFilter still applies on top, so search never widens it.
+const SEARCH_MAX_LENGTH = 50
+const SEARCH_MATCH_LIMIT = 500
+const escapeRegex = (value) => String(value).replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
+
+const matchingIds = async (model, filter) =>
+  (await model.find(filter).select('_id').limit(SEARCH_MATCH_LIMIT).lean()).map(
+    (row) => row._id,
+  )
+
+const applyPayoutSearch = async (filter, query) => {
+  const search = String(query.search || '').trim().slice(0, SEARCH_MAX_LENGTH)
+  if (!search) {
+    return
+  }
+  const pattern = { $regex: escapeRegex(search), $options: 'i' }
+  const [leadIds, storeIds, userIds] = await Promise.all([
+    matchingIds(leads, { uniqueCode: pattern }),
+    matchingIds(storeModel, { storeName: pattern }),
+    matchingIds(UsersModel, { $or: [{ name: pattern }, { email: pattern }] }),
+  ])
+  filter.$or = [
+    { merchantOrderNo: pattern },
+    { providerTransactionRrn: pattern },
+    { providerResponseCode: pattern },
+    { status: pattern },
+    { provider: pattern },
+    { beneficiaryAccountMasked: pattern },
+    { beneficiaryVpaMasked: pattern },
+    ...(leadIds.length ? [{ leadId: { $in: leadIds } }] : []),
+    ...(storeIds.length ? [{ storeId: { $in: storeIds } }] : []),
+    ...(userIds.length ? [{ initiatedBy: { $in: userIds } }] : []),
+  ]
 }
 
 const enquirePayoutRailStatus = async (payout) => {
@@ -699,6 +739,7 @@ export const getPayoutForUser = async ({ payoutId, actorId }) => {
 export const listPayoutsForUser = async ({ actorId, query = {} }) => {
   const actor = await loadActor(actorId)
   const filter = buildPayoutListFilter(actor, query, actorId)
+  await applyPayoutSearch(filter, query)
   const limit = Math.min(Math.max(Number(query.limit) || 20, 1), 100)
   const page = Math.max(Number(query.page) || 1, 1)
   const [items, total] = await Promise.all([
